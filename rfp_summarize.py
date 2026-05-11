@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 
-import anthropic
+from openai import OpenAI
 
 SYSTEM_PROMPT = """You are an expert procurement analyst specializing in RFP (Request for Proposal) analysis.
 
@@ -77,19 +77,23 @@ def _read_docx_file(path: Path) -> str:
     return "\n".join(paragraphs)
 
 
-def _upload_pdf(client: anthropic.Anthropic, path: Path) -> str:
-    """Upload a PDF to the Files API and return the file_id."""
-    with path.open("rb") as f:
-        meta = client.beta.files.upload(
-            file=(path.name, f, "application/pdf"),
+def _read_pdf_file(path: Path) -> str:
+    try:
+        from pypdf import PdfReader  # type: ignore[import-untyped]
+    except ImportError:
+        sys.exit(
+            "pypdf is required to read .pdf files.\n"
+            "Install it with: pip install pypdf"
         )
-    return meta.id
+    reader = PdfReader(str(path))
+    pages = [page.extract_text() or "" for page in reader.pages]
+    return "\n\n".join(pages)
 
 
 def summarize_rfp(
     source: str,
     *,
-    model: str = "claude-opus-4-7",
+    model: str = "gpt-4o",
     stream: bool = True,
     output_format: str = "both",  # "json" | "text" | "both"
 ) -> dict:
@@ -98,7 +102,7 @@ def summarize_rfp(
 
     Args:
         source: Path to an RFP file (.pdf, .docx, .txt) or raw text content.
-        model: Claude model ID to use.
+        model: OpenAI model ID to use.
         stream: Whether to stream the response (recommended for large docs).
         output_format: Controls console output. "json" prints only JSON,
                        "text" prints only the formatted summary, "both" prints both.
@@ -106,73 +110,36 @@ def summarize_rfp(
     Returns:
         Parsed summary dict.
     """
-    client = anthropic.Anthropic()
+    client = OpenAI()
 
     # --- Resolve input ---
-    file_id: str | None = None
-    text_content: str | None = None
-
     path = Path(source)
     if path.exists():
         suffix = path.suffix.lower()
         if suffix == ".pdf":
-            print(f"[*] Uploading PDF to Files API: {path.name}", file=sys.stderr)
-            file_id = _upload_pdf(client, path)
-            print(f"[*] Uploaded — file_id: {file_id}", file=sys.stderr)
+            print(f"[*] Extracting text from PDF: {path.name}", file=sys.stderr)
+            text_content = _read_pdf_file(path)
         elif suffix in {".docx", ".doc"}:
             print(f"[*] Extracting text from DOCX: {path.name}", file=sys.stderr)
             text_content = _read_docx_file(path)
         else:
             text_content = _read_text_file(path)
     else:
-        # Treat as raw text
         text_content = source
 
-    # --- Build user message content ---
-    user_content: list[dict] = []
-
-    if file_id:
-        user_content.append(
-            {
-                "type": "document",
-                "source": {"type": "file", "file_id": file_id},
-                "title": "RFP Document",
-            }
-        )
-    else:
-        # Cache the (potentially large) document text
-        user_content.append(
-            {
-                "type": "text",
-                "text": text_content or "",
-                "cache_control": {"type": "ephemeral"},
-            }
-        )
-
-    user_content.append(
-        {
-            "type": "text",
-            "text": (
-                "Please analyze the RFP document above and return a structured JSON summary "
-                "following the schema in your instructions. Be thorough and extract all "
-                "relevant dates, requirements, and evaluation criteria."
-            ),
-        }
+    user_message = (
+        f"{text_content}\n\n"
+        "Please analyze the RFP document above and return a structured JSON summary "
+        "following the schema in your instructions. Be thorough and extract all "
+        "relevant dates, requirements, and evaluation criteria."
     )
 
     print(f"[*] Sending request to {model}…", file=sys.stderr)
 
-    # --- API call ---
-    if file_id:
-        # PDF via Files API requires beta client
-        raw_text = _call_beta(client, model, user_content, stream=stream)
-    else:
-        raw_text = _call_standard(client, model, user_content, stream=stream)
+    raw_text = _call_openai(client, model, user_message, stream=stream)
 
-    # --- Parse JSON ---
     summary = _extract_json(raw_text)
 
-    # --- Output ---
     if output_format in {"json", "both"}:
         print(json.dumps(summary, indent=2, ensure_ascii=False))
 
@@ -189,81 +156,44 @@ def summarize_rfp(
 # --------------------------------------------------------------------------- #
 
 
-def _call_standard(
-    client: anthropic.Anthropic,
+def _call_openai(
+    client: OpenAI,
     model: str,
-    user_content: list[dict],
+    user_message: str,
     *,
     stream: bool,
 ) -> str:
-    """Call the standard Messages API."""
-    kwargs = dict(
-        model=model,
-        max_tokens=4096,
-        thinking={"type": "adaptive"},
-        system=[
-            {
-                "type": "text",
-                "text": SYSTEM_PROMPT,
-                "cache_control": {"type": "ephemeral"},
-            }
-        ],
-        messages=[{"role": "user", "content": user_content}],
-    )
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_message},
+    ]
 
     if stream:
-        with client.messages.stream(**kwargs) as s:
-            text = ""
-            for chunk in s.text_stream:
-                text += chunk
-            return text
-    else:
-        response = client.messages.create(**kwargs)
-        return next(
-            (b.text for b in response.content if b.type == "text"), ""
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=4096,
+            stream=True,
         )
-
-
-def _call_beta(
-    client: anthropic.Anthropic,
-    model: str,
-    user_content: list[dict],
-    *,
-    stream: bool,
-) -> str:
-    """Call the beta Messages API (needed for file_id document sources)."""
-    kwargs = dict(
-        model=model,
-        max_tokens=4096,
-        thinking={"type": "adaptive"},
-        betas=["files-api-2025-04-14"],
-        system=[
-            {
-                "type": "text",
-                "text": SYSTEM_PROMPT,
-                "cache_control": {"type": "ephemeral"},
-            }
-        ],
-        messages=[{"role": "user", "content": user_content}],
-    )
-
-    if stream:
-        with client.beta.messages.stream(**kwargs) as s:
-            text = ""
-            for chunk in s.text_stream:
-                text += chunk
-            return text
+        text = ""
+        for chunk in response:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                text += delta
+        return text
     else:
-        response = client.beta.messages.create(**kwargs)
-        return next(
-            (b.text for b in response.content if hasattr(b, "text")), ""
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=4096,
+            stream=False,
         )
+        return response.choices[0].message.content or ""
 
 
 def _extract_json(raw: str) -> dict:
     """Extract the first JSON object from a string."""
     raw = raw.strip()
-    # Strip markdown code fences if present
     if raw.startswith("```"):
         lines = raw.splitlines()
         raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
@@ -351,7 +281,7 @@ def _print_readable(summary: dict) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Summarize an RFP document using Claude.",
+        description="Summarize an RFP document using the OpenAI API.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -367,8 +297,8 @@ Examples:
     )
     parser.add_argument(
         "--model",
-        default="claude-opus-4-7",
-        help="Claude model ID (default: claude-opus-4-7)",
+        default="gpt-4o",
+        help="OpenAI model ID (default: gpt-4o)",
     )
     parser.add_argument(
         "--format",
@@ -389,10 +319,10 @@ Examples:
 
     args = parser.parse_args()
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not os.environ.get("OPENAI_API_KEY"):
         sys.exit(
-            "Error: ANTHROPIC_API_KEY environment variable is not set.\n"
-            "Export it before running: export ANTHROPIC_API_KEY=sk-ant-..."
+            "Error: OPENAI_API_KEY environment variable is not set.\n"
+            "Export it before running: export OPENAI_API_KEY=sk-..."
         )
 
     source = args.source
