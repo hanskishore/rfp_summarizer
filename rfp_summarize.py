@@ -8,7 +8,10 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
 from openai import OpenAI
+
+load_dotenv()
 
 SYSTEM_PROMPT = """You are an expert procurement analyst specializing in RFP (Request for Proposal) analysis.
 
@@ -51,6 +54,7 @@ Return ONLY a JSON object with these fields (omit any field for which no informa
   "questions_deadline": "Deadline for submitting questions",
   "amendments": "Note if this is an amendment to a prior RFP",
   "attachments": ["List of attachments or exhibits referenced"],
+  "sam_gov_link": "SAM.gov URL if sourced from SAM.gov",
   "red_flags": ["Any unusual clauses, aggressive timelines, or concerns worth flagging"]
 }"""
 
@@ -90,12 +94,129 @@ def _read_pdf_file(path: Path) -> str:
     return "\n\n".join(pages)
 
 
+def _read_pdf_bytes(data: bytes) -> str:
+    try:
+        from pypdf import PdfReader  # type: ignore[import-untyped]
+        import io
+    except ImportError:
+        sys.exit("pypdf is required to read .pdf files.\nInstall it with: pip install pypdf")
+    reader = PdfReader(io.BytesIO(data))
+    pages = [page.extract_text() or "" for page in reader.pages]
+    return "\n\n".join(pages)
+
+
+# --------------------------------------------------------------------------- #
+# SAM.gov helpers
+# --------------------------------------------------------------------------- #
+
+
+def summarize_from_sam_search(
+    query: str,
+    *,
+    limit: int = 5,
+    posted_from: str | None = None,
+    model: str = "gpt-4o",
+    stream: bool = True,
+    output_format: str = "both",
+    output_dir: str | None = None,
+) -> list[dict]:
+    """
+    Search SAM.gov for RFPs matching a keyword and summarize each result.
+
+    Args:
+        query: Keyword search string (e.g. "cloud services", "cybersecurity").
+        limit: Max number of opportunities to summarize.
+        posted_from: Filter by posted date, format MM/dd/yyyy.
+        model: OpenAI model ID.
+        stream: Whether to stream responses.
+        output_format: "json" | "text" | "both".
+        output_dir: If set, write each summary as a JSON file in this directory.
+
+    Returns:
+        List of parsed summary dicts.
+    """
+    from sam_gov import search_opportunities, opportunity_to_text
+
+    notices = search_opportunities(query, limit=limit, posted_from=posted_from)
+    if not notices:
+        print("[!] No opportunities found on SAM.gov for that query.", file=sys.stderr)
+        return []
+
+    print(f"[*] Found {len(notices)} opportunit{'y' if len(notices) == 1 else 'ies'}.", file=sys.stderr)
+    summaries = []
+
+    for i, notice in enumerate(notices, 1):
+        title = notice.get("title", "Untitled")
+        notice_id = notice.get("noticeId", "")
+        print(f"\n[{i}/{len(notices)}] {title}", file=sys.stderr)
+
+        text_content = opportunity_to_text(notice)
+        summary = _summarize_text(
+            text_content,
+            model=model,
+            stream=stream,
+            output_format=output_format,
+        )
+
+        if output_dir and summary:
+            _write_summary(summary, notice_id or f"result_{i}", output_dir)
+
+        summaries.append(summary)
+
+    return summaries
+
+
+def summarize_from_sam_id(
+    notice_id: str,
+    *,
+    model: str = "gpt-4o",
+    stream: bool = True,
+    output_format: str = "both",
+    use_attachments: bool = False,
+) -> dict:
+    """
+    Fetch a SAM.gov notice by ID and summarize it.
+
+    Args:
+        notice_id: SAM.gov notice/opportunity ID.
+        use_attachments: If True, attempt to download and include PDF attachments.
+    """
+    from sam_gov import fetch_opportunity_by_id, opportunity_to_text, list_attachments, download_attachment
+
+    notice = fetch_opportunity_by_id(notice_id)
+    if not notice:
+        sys.exit(f"Error: No SAM.gov opportunity found with ID: {notice_id}")
+
+    text_content = opportunity_to_text(notice)
+
+    if use_attachments:
+        try:
+            attachments = list_attachments(notice_id)
+            for att in attachments:
+                name = att.get("name", "")
+                resource_id = att.get("resourceId", att.get("id", ""))
+                if resource_id and name.lower().endswith(".pdf"):
+                    print(f"[*] Downloading attachment: {name}", file=sys.stderr)
+                    pdf_bytes = download_attachment(notice_id, resource_id)
+                    pdf_text = _read_pdf_bytes(pdf_bytes)
+                    text_content += f"\n\n--- ATTACHMENT: {name} ---\n{pdf_text}"
+        except Exception as exc:
+            print(f"[!] Could not fetch attachments: {exc}", file=sys.stderr)
+
+    return _summarize_text(text_content, model=model, stream=stream, output_format=output_format)
+
+
+# --------------------------------------------------------------------------- #
+# Core summarization
+# --------------------------------------------------------------------------- #
+
+
 def summarize_rfp(
     source: str,
     *,
     model: str = "gpt-4o",
     stream: bool = True,
-    output_format: str = "both",  # "json" | "text" | "both"
+    output_format: str = "both",
 ) -> dict:
     """
     Summarize an RFP from a file path or raw text string.
@@ -104,15 +225,11 @@ def summarize_rfp(
         source: Path to an RFP file (.pdf, .docx, .txt) or raw text content.
         model: OpenAI model ID to use.
         stream: Whether to stream the response (recommended for large docs).
-        output_format: Controls console output. "json" prints only JSON,
-                       "text" prints only the formatted summary, "both" prints both.
+        output_format: "json" | "text" | "both".
 
     Returns:
         Parsed summary dict.
     """
-    client = OpenAI()
-
-    # --- Resolve input ---
     path = Path(source)
     if path.exists():
         suffix = path.suffix.lower()
@@ -127,6 +244,18 @@ def summarize_rfp(
     else:
         text_content = source
 
+    return _summarize_text(text_content, model=model, stream=stream, output_format=output_format)
+
+
+def _summarize_text(
+    text_content: str,
+    *,
+    model: str,
+    stream: bool,
+    output_format: str,
+) -> dict:
+    client = OpenAI()
+
     user_message = (
         f"{text_content}\n\n"
         "Please analyze the RFP document above and return a structured JSON summary "
@@ -135,9 +264,7 @@ def summarize_rfp(
     )
 
     print(f"[*] Sending request to {model}…", file=sys.stderr)
-
     raw_text = _call_openai(client, model, user_message, stream=stream)
-
     summary = _extract_json(raw_text)
 
     if output_format in {"json", "both"}:
@@ -151,18 +278,21 @@ def summarize_rfp(
     return summary
 
 
+def _write_summary(summary: dict, notice_id: str, output_dir: str) -> None:
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    safe_id = "".join(c if c.isalnum() or c in "-_" else "_" for c in notice_id)
+    out_path = out_dir / f"rfp_summary_{safe_id}.json"
+    out_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"[*] Saved: {out_path}", file=sys.stderr)
+
+
 # --------------------------------------------------------------------------- #
 # Internal helpers
 # --------------------------------------------------------------------------- #
 
 
-def _call_openai(
-    client: OpenAI,
-    model: str,
-    user_message: str,
-    *,
-    stream: bool,
-) -> str:
+def _call_openai(client: OpenAI, model: str, user_message: str, *, stream: bool) -> str:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_message},
@@ -192,7 +322,6 @@ def _call_openai(
 
 
 def _extract_json(raw: str) -> dict:
-    """Extract the first JSON object from a string."""
     raw = raw.strip()
     if raw.startswith("```"):
         lines = raw.splitlines()
@@ -208,7 +337,6 @@ def _extract_json(raw: str) -> dict:
 
 
 def _print_readable(summary: dict) -> None:
-    """Print a human-friendly version of the summary."""
     if "raw_response" in summary:
         print(summary["raw_response"])
         return
@@ -244,6 +372,7 @@ def _print_readable(summary: dict) -> None:
     _section("Issue Date", summary.get("issue_date"))
     _section("Submission Due", summary.get("due_date"))
     _section("Questions Deadline", summary.get("questions_deadline"))
+    _section("SAM.gov Link", summary.get("sam_gov_link"))
     _section("Project Overview", summary.get("project_overview"))
     _section("Scope of Work", summary.get("scope_of_work"))
 
@@ -281,20 +410,63 @@ def _print_readable(summary: dict) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Summarize an RFP document using the OpenAI API.",
+        description="Summarize RFP documents from local files or SAM.gov.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Local files
   python rfp_summarize.py rfp.pdf
   python rfp_summarize.py rfp.docx --format text
   python rfp_summarize.py rfp.txt --format json --no-stream
   cat rfp.txt | python rfp_summarize.py -
+
+  # SAM.gov — search by keyword
+  python rfp_summarize.py --sam "cloud services" --sam-limit 3
+  python rfp_summarize.py --sam "cybersecurity" --sam-from 01/01/2025 --output-dir ./summaries
+
+  # SAM.gov — fetch specific notice by ID
+  python rfp_summarize.py --sam-id abc123def456 --attachments
 """,
     )
-    parser.add_argument(
+
+    # Input source (mutually exclusive: file/stdin vs SAM.gov)
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument(
         "source",
-        help="Path to an RFP file (.pdf, .docx, .txt) or '-' to read from stdin.",
+        nargs="?",
+        help="Path to an RFP file (.pdf, .docx, .txt) or '-' for stdin.",
     )
+    source_group.add_argument(
+        "--sam",
+        metavar="QUERY",
+        help="Search SAM.gov opportunities by keyword.",
+    )
+    source_group.add_argument(
+        "--sam-id",
+        metavar="NOTICE_ID",
+        help="Fetch and summarize a specific SAM.gov notice by ID.",
+    )
+
+    # SAM.gov options
+    parser.add_argument(
+        "--sam-limit",
+        type=int,
+        default=5,
+        metavar="N",
+        help="Number of SAM.gov results to summarize (default: 5).",
+    )
+    parser.add_argument(
+        "--sam-from",
+        metavar="MM/dd/yyyy",
+        help="Only include SAM.gov notices posted on or after this date.",
+    )
+    parser.add_argument(
+        "--attachments",
+        action="store_true",
+        help="Download and include PDF attachments when using --sam-id.",
+    )
+
+    # Output options
     parser.add_argument(
         "--model",
         default="gpt-4o",
@@ -314,27 +486,56 @@ Examples:
     parser.add_argument(
         "--output",
         metavar="FILE",
-        help="Write JSON summary to this file (in addition to stdout)",
+        help="Write JSON summary to this file (local file mode only).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        metavar="DIR",
+        help="Write each JSON summary to this directory (SAM.gov search mode).",
     )
 
     args = parser.parse_args()
 
     if not os.environ.get("OPENAI_API_KEY"):
         sys.exit(
-            "Error: OPENAI_API_KEY environment variable is not set.\n"
-            "Export it before running: export OPENAI_API_KEY=sk-..."
+            "Error: OPENAI_API_KEY is not set.\n"
+            "Add it to your .env file or export it: export OPENAI_API_KEY=sk-..."
         )
 
+    stream = not args.no_stream
+
+    # --- SAM.gov search mode ---
+    if args.sam:
+        summarize_from_sam_search(
+            args.sam,
+            limit=args.sam_limit,
+            posted_from=args.sam_from,
+            model=args.model,
+            stream=stream,
+            output_format=args.format,
+            output_dir=args.output_dir,
+        )
+        return
+
+    # --- SAM.gov notice ID mode ---
+    if args.sam_id:
+        summary = summarize_from_sam_id(
+            args.sam_id,
+            model=args.model,
+            stream=stream,
+            output_format=args.format,
+            use_attachments=args.attachments,
+        )
+        if args.output:
+            _write_summary(summary, args.sam_id, str(Path(args.output).parent))
+        return
+
+    # --- Local file / stdin mode ---
     source = args.source
     if source == "-":
         source = sys.stdin.read()
 
-    summary = summarize_rfp(
-        source,
-        model=args.model,
-        stream=not args.no_stream,
-        output_format=args.format,
-    )
+    summary = summarize_rfp(source, model=args.model, stream=stream, output_format=args.format)
 
     if args.output:
         out = Path(args.output)
