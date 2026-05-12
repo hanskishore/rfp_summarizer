@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from datetime import datetime, timedelta
 from typing import Optional
 
 import requests
@@ -41,10 +42,19 @@ def _strip_html(text: str) -> str:
     return re.sub(r" {2,}", " ", text).strip()
 
 
+def _default_date_range(days_back: int = 90) -> tuple[str, str]:
+    """Return (postedFrom, postedTo) strings in MM/dd/yyyy format."""
+    today = datetime.utcnow()
+    posted_to = today.strftime("%m/%d/%Y")
+    posted_from = (today - timedelta(days=days_back)).strftime("%m/%d/%Y")
+    return posted_from, posted_to
+
+
 def search_opportunities(
     query: str,
     limit: int = 5,
     posted_from: Optional[str] = None,
+    posted_to: Optional[str] = None,
     notice_types: str = "o,k",
 ) -> list[dict]:
     """
@@ -53,23 +63,28 @@ def search_opportunities(
     Args:
         query: Keyword search string.
         limit: Number of results to return (max 1000).
-        posted_from: Filter by post date, format MM/dd/yyyy (e.g. "01/01/2025").
+        posted_from: Start of date range, MM/dd/yyyy (default: 90 days ago).
+        posted_to: End of date range, MM/dd/yyyy (default: today).
         notice_types: Comma-separated SAM.gov ptype codes (default: solicitations + combined).
 
     Returns:
         List of opportunity dicts from the SAM.gov API.
     """
+    default_from, default_to = _default_date_range()
     params: dict = {
         "api_key": _get_api_key(),
         "q": query,
         "limit": limit,
         "ptype": notice_types,
-        "active": "true",
+        "postedFrom": posted_from or default_from,
+        "postedTo": posted_to or default_to,
     }
-    if posted_from:
-        params["postedFrom"] = posted_from
 
-    print(f"[*] Searching SAM.gov for: {query!r} (limit={limit})", file=sys.stderr)
+    print(
+        f"[*] Searching SAM.gov for: {query!r} "
+        f"(limit={limit}, {params['postedFrom']} → {params['postedTo']})",
+        file=sys.stderr,
+    )
     resp = requests.get(
         f"{SAM_API_BASE}/opportunities/v2/search",
         params=params,

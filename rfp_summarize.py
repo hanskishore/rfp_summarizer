@@ -115,6 +115,7 @@ def summarize_from_sam_search(
     *,
     limit: int = 5,
     posted_from: str | None = None,
+    posted_to: str | None = None,
     model: str = "gpt-4o",
     stream: bool = True,
     output_format: str = "both",
@@ -126,7 +127,8 @@ def summarize_from_sam_search(
     Args:
         query: Keyword search string (e.g. "cloud services", "cybersecurity").
         limit: Max number of opportunities to summarize.
-        posted_from: Filter by posted date, format MM/dd/yyyy.
+        posted_from: Start of date range, MM/dd/yyyy (default: 90 days ago).
+        posted_to: End of date range, MM/dd/yyyy (default: today).
         model: OpenAI model ID.
         stream: Whether to stream responses.
         output_format: "json" | "text" | "both".
@@ -137,7 +139,7 @@ def summarize_from_sam_search(
     """
     from sam_gov import search_opportunities, opportunity_to_text
 
-    notices = search_opportunities(query, limit=limit, posted_from=posted_from)
+    notices = search_opportunities(query, limit=limit, posted_from=posted_from, posted_to=posted_to)
     if not notices:
         print("[!] No opportunities found on SAM.gov for that query.", file=sys.stderr)
         return []
@@ -422,7 +424,7 @@ Examples:
 
   # SAM.gov — search by keyword
   python rfp_summarize.py --sam "cloud services" --sam-limit 3
-  python rfp_summarize.py --sam "cybersecurity" --sam-from 01/01/2025 --output-dir ./summaries
+  python rfp_summarize.py --sam "cybersecurity" --sam-from 01/01/2025 --sam-to 04/30/2025 --output-dir ./summaries
 
   # SAM.gov — fetch specific notice by ID
   python rfp_summarize.py --sam-id abc123def456 --attachments
@@ -458,7 +460,12 @@ Examples:
     parser.add_argument(
         "--sam-from",
         metavar="MM/dd/yyyy",
-        help="Only include SAM.gov notices posted on or after this date.",
+        help="Start of posted date range (default: 90 days ago).",
+    )
+    parser.add_argument(
+        "--sam-to",
+        metavar="MM/dd/yyyy",
+        help="End of posted date range (default: today).",
     )
     parser.add_argument(
         "--attachments",
@@ -510,6 +517,7 @@ Examples:
             args.sam,
             limit=args.sam_limit,
             posted_from=args.sam_from,
+            posted_to=args.sam_to,
             model=args.model,
             stream=stream,
             output_format=args.format,
