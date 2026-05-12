@@ -3,370 +3,302 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RFP Summarizer</title>
+<title>RFPLens — AI Bid Intelligence</title>
 <style>
   :root {
-    --sidebar-bg: #0f172a;
-    --sidebar-hover: #1e293b;
-    --sidebar-active: #1d4ed8;
-    --main-bg: #f1f5f9;
-    --card-bg: #ffffff;
-    --border: #e2e8f0;
-    --text: #0f172a;
-    --text-muted: #64748b;
-    --blue: #2563eb;
-    --green: #16a34a;
-    --amber: #d97706;
-    --red: #dc2626;
-    --purple: #7c3aed;
-    --radius: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
-    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+    --navy: #0f172a; --navy2: #1e293b; --navy3: #334155;
+    --blue: #2563eb; --blue2: #1d4ed8; --blue-light: #dbeafe;
+    --green: #16a34a; --green-light: #dcfce7;
+    --amber: #d97706; --amber-light: #fef3c7;
+    --red: #dc2626; --red-light: #fee2e2;
+    --purple: #7c3aed; --purple-light: #ede9fe;
+    --bg: #f1f5f9; --card: #fff; --border: #e2e8f0;
+    --text: #0f172a; --muted: #64748b;
+    --r: 8px; --sh: 0 1px 3px rgba(0,0,0,.1);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-         background: var(--main-bg); color: var(--text); height: 100vh;
-         display: flex; flex-direction: column; overflow: hidden; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+       background:var(--bg);color:var(--text);height:100vh;
+       display:flex;flex-direction:column;overflow:hidden}
 
   /* ── Header ── */
-  header {
-    background: var(--sidebar-bg); color: #fff; padding: 0 20px;
-    height: 56px; display: flex; align-items: center; gap: 12px;
-    flex-shrink: 0; border-bottom: 1px solid #1e293b; z-index: 10;
-  }
-  header .logo { font-size: 20px; font-weight: 700; letter-spacing: -.5px; }
-  header .logo span { color: #60a5fa; }
-  header .tagline { font-size: 12px; color: #94a3b8; margin-left: 4px; }
-  header .key-status { margin-left: auto; display: flex; gap: 8px; }
-  .key-badge { font-size: 11px; padding: 3px 8px; border-radius: 99px;
-               font-weight: 600; display: flex; align-items: center; gap: 4px; }
-  .key-badge.ok  { background: #14532d; color: #4ade80; }
-  .key-badge.err { background: #7f1d1d; color: #fca5a5; }
+  header{background:var(--navy);color:#fff;padding:0 20px;height:52px;
+         display:flex;align-items:center;gap:10px;flex-shrink:0;
+         border-bottom:1px solid var(--navy2)}
+  .logo{font-size:18px;font-weight:800;letter-spacing:-.5px}
+  .logo span{color:#60a5fa}
+  .tagline{font-size:12px;color:#94a3b8;border-left:1px solid var(--navy3);
+            padding-left:10px;margin-left:2px}
+  .key-status{margin-left:auto;display:flex;gap:6px}
+  .key-badge{font-size:11px;padding:3px 8px;border-radius:99px;font-weight:600;
+             display:flex;align-items:center;gap:3px}
+  .key-badge.ok {background:#14532d;color:#4ade80}
+  .key-badge.err{background:#7f1d1d;color:#fca5a5}
 
   /* ── Layout ── */
-  .layout { display: flex; flex: 1; overflow: hidden; }
+  .layout{display:flex;flex:1;overflow:hidden}
 
   /* ── Sidebar ── */
-  .sidebar {
-    width: 320px; background: var(--sidebar-bg); color: #e2e8f0;
-    display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;
-    border-right: 1px solid #1e293b;
-  }
+  .sidebar{width:310px;background:var(--navy);color:#e2e8f0;
+           display:flex;flex-direction:column;flex-shrink:0;
+           overflow:hidden;border-right:1px solid var(--navy2)}
 
-  /* Tabs */
-  .tabs { display: flex; border-bottom: 1px solid #1e293b; flex-shrink: 0; }
-  .tab-btn {
-    flex: 1; padding: 12px 6px; font-size: 12px; font-weight: 600;
-    color: #64748b; background: none; border: none; cursor: pointer;
-    border-bottom: 2px solid transparent; transition: all .15s; letter-spacing: .3px;
-  }
-  .tab-btn.active { color: #60a5fa; border-bottom-color: #60a5fa; }
-  .tab-btn:hover:not(.active) { color: #94a3b8; background: #1e293b; }
+  .tabs{display:flex;border-bottom:1px solid var(--navy2);flex-shrink:0}
+  .tab-btn{flex:1;padding:11px 6px;font-size:12px;font-weight:600;color:#64748b;
+           background:none;border:none;cursor:pointer;
+           border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.3px}
+  .tab-btn.active{color:#60a5fa;border-bottom-color:#60a5fa}
+  .tab-btn:hover:not(.active){color:#94a3b8;background:var(--navy2)}
 
-  /* Search panels */
-  .search-panels { padding: 16px; flex-shrink: 0; border-bottom: 1px solid #1e293b; }
-  .panel { display: none; flex-direction: column; gap: 10px; }
-  .panel.active { display: flex; }
+  .search-panels{padding:14px;flex-shrink:0;border-bottom:1px solid var(--navy2)}
+  .panel{display:none;flex-direction:column;gap:10px}
+  .panel.active{display:flex}
 
-  .field label { display: block; font-size: 11px; font-weight: 600;
-                 color: #94a3b8; margin-bottom: 4px; letter-spacing: .5px; }
-  .field input, .field select {
-    width: 100%; padding: 8px 10px; border-radius: 6px; font-size: 13px;
-    background: #1e293b; border: 1px solid #334155; color: #e2e8f0;
-    outline: none; transition: border-color .15s;
-  }
-  .field input:focus, .field select:focus { border-color: #3b82f6; }
-  .field input::placeholder { color: #475569; }
+  .field label{display:block;font-size:10px;font-weight:700;color:#94a3b8;
+               margin-bottom:4px;letter-spacing:.6px;text-transform:uppercase}
+  .field input,.field select{
+    width:100%;padding:7px 10px;border-radius:6px;font-size:13px;
+    background:var(--navy2);border:1px solid var(--navy3);color:#e2e8f0;
+    outline:none;transition:border-color .15s}
+  .field input:focus,.field select:focus{border-color:#3b82f6}
+  .field input::placeholder{color:#475569}
 
-  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  /* Period presets */
+  .period-label{font-size:10px;font-weight:700;color:#94a3b8;
+                letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
+  .period-presets{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}
+  .preset-btn{
+    padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600;
+    background:var(--navy2);border:1px solid var(--navy3);color:#94a3b8;
+    cursor:pointer;transition:all .15s;white-space:nowrap}
+  .preset-btn:hover{border-color:#3b82f6;color:#93c5fd}
+  .preset-btn.active{background:#1e3a5f;border-color:#3b82f6;color:#60a5fa}
+  .custom-range{display:none;gap:6px;margin-top:6px}
+  .custom-range.show{display:grid;grid-template-columns:1fr 1fr}
 
-  .search-btn {
-    width: 100%; padding: 10px; border-radius: 6px; font-size: 13px;
-    font-weight: 700; border: none; cursor: pointer; transition: all .15s;
-    background: var(--blue); color: #fff; letter-spacing: .3px;
-  }
-  .search-btn:hover { background: #1d4ed8; }
-  .search-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
-  /* Drop zone */
-  .dropzone {
-    border: 2px dashed #334155; border-radius: 8px; padding: 24px 16px;
-    text-align: center; color: #64748b; cursor: pointer; transition: all .2s;
-  }
-  .dropzone:hover, .dropzone.drag-over {
-    border-color: #3b82f6; background: #1e3a5f; color: #93c5fd;
-  }
-  .dropzone .icon { font-size: 28px; margin-bottom: 8px; }
-  .dropzone p { font-size: 12px; line-height: 1.5; }
-  .dropzone input { display: none; }
+  .search-btn{width:100%;padding:10px;border-radius:6px;font-size:13px;
+              font-weight:700;border:none;cursor:pointer;transition:all .15s;
+              background:var(--blue);color:#fff}
+  .search-btn:hover{background:var(--blue2)}
+  .search-btn:disabled{background:var(--navy3);color:#64748b;cursor:not-allowed}
+
+  /* Upload panel */
+  .upload-area{position:relative}
+  .dropzone{
+    border:2px dashed var(--navy3);border-radius:8px;padding:20px 14px;
+    text-align:center;color:#64748b;cursor:pointer;transition:all .2s;min-height:100px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+  .dropzone:hover,.dropzone.drag-over{border-color:#3b82f6;background:#1e3a5f;color:#93c5fd}
+  .dropzone .dz-icon{font-size:26px}
+  .dropzone p{font-size:12px;line-height:1.5}
+  .dropzone strong{color:#93c5fd}
+  .dropzone input{display:none}
+  .file-selected{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+  .file-meta{font-size:11px;color:#64748b;margin-top:2px}
 
   /* Results list */
-  .results-header {
-    padding: 12px 16px; font-size: 11px; font-weight: 700; color: #94a3b8;
-    letter-spacing: .5px; border-bottom: 1px solid #1e293b; flex-shrink: 0;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .results-count { background: #1e293b; padding: 2px 7px; border-radius: 99px;
-                   font-size: 11px; color: #60a5fa; }
-  .results-list { flex: 1; overflow-y: auto; }
-  .results-list::-webkit-scrollbar { width: 4px; }
-  .results-list::-webkit-scrollbar-track { background: transparent; }
-  .results-list::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+  .results-header{padding:10px 14px;font-size:10px;font-weight:700;color:#94a3b8;
+                  letter-spacing:.6px;border-bottom:1px solid var(--navy2);
+                  flex-shrink:0;display:flex;align-items:center;gap:8px;
+                  text-transform:uppercase}
+  .results-count{background:var(--navy2);padding:2px 7px;border-radius:99px;
+                 font-size:11px;color:#60a5fa}
+  .results-list{flex:1;overflow-y:auto}
+  .results-list::-webkit-scrollbar{width:3px}
+  .results-list::-webkit-scrollbar-thumb{background:var(--navy3);border-radius:2px}
 
-  .result-item {
-    padding: 12px 16px; border-bottom: 1px solid #1e293b; cursor: pointer;
-    transition: background .12s; position: relative;
-  }
-  .result-item:hover { background: var(--sidebar-hover); }
-  .result-item.active { background: #1e3a5f; border-left: 3px solid #3b82f6; }
-  .result-item .ri-title {
-    font-size: 13px; font-weight: 600; color: #e2e8f0; line-height: 1.4;
-    margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .result-item .ri-meta { font-size: 11px; color: #64748b; }
-  .result-item .ri-due {
-    font-size: 11px; font-weight: 700; margin-top: 4px;
-  }
-  .due-soon { color: #f87171; }
-  .due-ok   { color: #4ade80; }
-  .due-none { color: #64748b; }
+  .result-item{padding:11px 14px;border-bottom:1px solid var(--navy2);
+               cursor:pointer;transition:background .12s}
+  .result-item:hover{background:var(--navy2)}
+  .result-item.active{background:#1e3a5f;border-left:3px solid #3b82f6;padding-left:11px}
+  .ri-title{font-size:12px;font-weight:600;color:#e2e8f0;line-height:1.4;
+            margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;
+            -webkit-box-orient:vertical;overflow:hidden}
+  .ri-meta{font-size:11px;color:#64748b}
+  .ri-due{font-size:11px;font-weight:700;margin-top:3px}
+  .due-soon{color:#f87171}.due-ok{color:#4ade80}.due-none{color:#64748b}
 
-  .progress-item {
-    padding: 12px 16px; border-bottom: 1px solid #1e293b;
-    display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 12px;
-  }
-  .spinner {
-    width: 16px; height: 16px; border: 2px solid #334155;
-    border-top-color: #3b82f6; border-radius: 50%;
-    animation: spin .7s linear infinite; flex-shrink: 0;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress-item{padding:11px 14px;border-bottom:1px solid var(--navy2);
+                 display:flex;align-items:center;gap:9px;color:#64748b;font-size:12px}
+  .spinner{width:14px;height:14px;border:2px solid var(--navy3);border-top-color:#3b82f6;
+           border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
   /* ── Main ── */
-  .main { flex: 1; overflow-y: auto; padding: 24px; }
-  .main::-webkit-scrollbar { width: 6px; }
-  .main::-webkit-scrollbar-track { background: transparent; }
-  .main::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  .main{flex:1;overflow-y:auto;padding:20px}
+  .main::-webkit-scrollbar{width:5px}
+  .main::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
 
-  .empty-state {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; height: 100%; color: var(--text-muted); text-align: center;
-  }
-  .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
-  .empty-state h2 { font-size: 20px; font-weight: 700; color: #334155; margin-bottom: 8px; }
-  .empty-state p { font-size: 14px; max-width: 380px; line-height: 1.6; }
+  .empty-state{display:flex;flex-direction:column;align-items:center;
+               justify-content:center;height:100%;color:var(--muted);text-align:center}
+  .empty-state .es-icon{font-size:44px;margin-bottom:14px;opacity:.35}
+  .empty-state h2{font-size:18px;font-weight:700;color:#334155;margin-bottom:8px}
+  .empty-state p{font-size:13px;max-width:360px;line-height:1.7}
 
   /* ── Bid Card ── */
-  .bid-card { display: flex; flex-direction: column; gap: 16px; max-width: 960px; }
+  .bid-card{display:flex;flex-direction:column;gap:14px;max-width:980px}
+  .card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);
+        border:1px solid var(--border)}
+  .card-header{padding:18px 22px 14px;border-bottom:1px solid var(--border)}
+  .card-body{padding:18px 22px}
 
-  /* Card shell */
-  .card {
-    background: var(--card-bg); border-radius: var(--radius);
-    box-shadow: var(--shadow); border: 1px solid var(--border);
-  }
-  .card-header {
-    padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
-  }
-  .card-body { padding: 20px 24px; }
-  .card-section { margin-bottom: 20px; }
-  .card-section:last-child { margin-bottom: 0; }
+  .hero-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+  .badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;
+         letter-spacing:.3px;display:inline-flex;align-items:center;gap:3px}
+  .badge-blue  {background:#dbeafe;color:#1d4ed8}
+  .badge-green {background:#dcfce7;color:#15803d}
+  .badge-amber {background:#fef3c7;color:#b45309}
+  .badge-red   {background:#fee2e2;color:#b91c1c}
+  .badge-purple{background:#ede9fe;color:#6d28d9}
+  .badge-gray  {background:#f1f5f9;color:#475569}
 
-  /* Hero */
-  .hero-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-  .badge {
-    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px;
-    letter-spacing: .3px; display: inline-flex; align-items: center; gap: 4px;
-  }
-  .badge-blue   { background: #dbeafe; color: #1d4ed8; }
-  .badge-green  { background: #dcfce7; color: #15803d; }
-  .badge-amber  { background: #fef3c7; color: #b45309; }
-  .badge-red    { background: #fee2e2; color: #b91c1c; }
-  .badge-purple { background: #ede9fe; color: #6d28d9; }
-  .badge-gray   { background: #f1f5f9; color: #475569; }
+  .hero-title{font-size:20px;font-weight:800;line-height:1.3;margin-bottom:5px}
+  .hero-sub{font-size:13px;color:var(--muted);margin-bottom:14px}
 
-  .hero-title {
-    font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.3;
-    margin-bottom: 6px;
-  }
-  .hero-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; }
+  .stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+               gap:10px;padding:14px 22px;border-bottom:1px solid var(--border);
+               background:#f8fafc}
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat-label{font-size:10px;font-weight:700;color:var(--muted);
+              letter-spacing:.5px;text-transform:uppercase}
+  .stat-value{font-size:14px;font-weight:700}
+  .stat-value.urgent{color:var(--red)}.stat-value.ok{color:var(--green)}
 
-  /* Stats strip */
-  .stats-strip {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--border);
-    background: #f8fafc; border-radius: 0;
-  }
-  .stat { display: flex; flex-direction: column; gap: 2px; }
-  .stat-label { font-size: 10px; font-weight: 700; color: var(--text-muted);
-                letter-spacing: .5px; text-transform: uppercase; }
-  .stat-value { font-size: 15px; font-weight: 700; color: var(--text); }
-  .stat-value.urgent { color: var(--red); }
-  .stat-value.ok     { color: var(--green); }
+  .scorecard{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px}
+  .score-item{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;
+              border-radius:6px;border:1px solid;font-size:12px;line-height:1.4}
+  .score-item .si{font-size:15px;flex-shrink:0;margin-top:1px}
+  .score-item.flag{background:#fff1f2;border-color:#fecaca}
+  .score-item.warn{background:#fffbeb;border-color:#fde68a}
+  .score-item.good{background:#f0fdf4;border-color:#bbf7d0}
+  .score-item.info{background:#eff6ff;border-color:#bfdbfe}
 
-  /* Scorecard */
-  .scorecard {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
-  }
-  .score-item {
-    display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px;
-    border-radius: 6px; background: #f8fafc; border: 1px solid var(--border);
-    font-size: 12px; line-height: 1.4;
-  }
-  .score-item .score-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-  .score-item .score-text { color: var(--text); font-weight: 500; }
-  .score-item.flag  { background: #fff1f2; border-color: #fecaca; }
-  .score-item.warn  { background: #fffbeb; border-color: #fde68a; }
-  .score-item.good  { background: #f0fdf4; border-color: #bbf7d0; }
-  .score-item.info  { background: #eff6ff; border-color: #bfdbfe; }
+  .section-title{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.8px;
+                 text-transform:uppercase;margin-bottom:11px;display:flex;
+                 align-items:center;gap:8px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
 
-  /* Section headings */
-  .section-title {
-    font-size: 11px; font-weight: 800; color: var(--text-muted);
-    letter-spacing: .8px; text-transform: uppercase; margin-bottom: 12px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .section-title::after {
-    content: ''; flex: 1; height: 1px; background: var(--border);
-  }
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.two-col{grid-template-columns:1fr}}
 
-  /* Two-col grid */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+  .item-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+  .item-list li{font-size:13px;padding-left:14px;position:relative;line-height:1.5}
+  .item-list li::before{content:'›';position:absolute;left:0;color:var(--blue);font-weight:700}
 
-  /* Lists */
-  .item-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-  .item-list li {
-    font-size: 13px; color: var(--text); padding-left: 16px; position: relative;
-    line-height: 1.5;
-  }
-  .item-list li::before {
-    content: '›'; position: absolute; left: 0; color: var(--blue); font-weight: 700;
-  }
+  .tag-list{display:flex;flex-wrap:wrap;gap:5px}
+  .tag{font-size:12px;padding:3px 9px;border-radius:5px;font-weight:500;border:1px solid}
+  .tag-req {background:#fff1f2;border-color:#fecaca;color:#b91c1c}
+  .tag-pref{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
 
-  /* Tags */
-  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag {
-    font-size: 12px; padding: 4px 10px; border-radius: 5px;
-    font-weight: 500; border: 1px solid;
-  }
-  .tag-req  { background: #fff1f2; border-color: #fecaca; color: #b91c1c; }
-  .tag-pref { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .eval-list{display:flex;flex-direction:column;gap:8px}
+  .eval-item{display:flex;flex-direction:column;gap:3px}
+  .eval-row{display:flex;justify-content:space-between;font-size:13px;font-weight:600}
+  .eval-pct{color:var(--blue)}
+  .eval-bar{height:5px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+  .eval-fill{height:100%;background:var(--blue);border-radius:99px;transition:width .5s ease}
 
-  /* Evaluation bars */
-  .eval-list { display: flex; flex-direction: column; gap: 8px; }
-  .eval-item { display: flex; flex-direction: column; gap: 4px; }
-  .eval-row { display: flex; justify-content: space-between;
-              font-size: 13px; font-weight: 600; }
-  .eval-pct { color: var(--blue); }
-  .eval-bar { height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
-  .eval-fill { height: 100%; background: var(--blue); border-radius: 99px;
-               transition: width .5s ease; }
+  .timeline{display:flex;flex-direction:column}
+  .tl-item{display:flex;gap:12px;padding:7px 0;border-bottom:1px dashed var(--border);
+           font-size:13px}
+  .tl-item:last-child{border-bottom:none}
+  .tl-date{width:130px;flex-shrink:0;color:var(--muted);font-weight:600;font-size:12px}
 
-  /* Dates timeline */
-  .timeline { display: flex; flex-direction: column; gap: 0; }
-  .timeline-item {
-    display: flex; gap: 12px; padding: 8px 0;
-    border-bottom: 1px dashed var(--border); font-size: 13px;
-  }
-  .timeline-item:last-child { border-bottom: none; }
-  .tl-date { width: 140px; flex-shrink: 0; color: var(--text-muted);
-             font-weight: 600; font-size: 12px; }
-  .tl-event { color: var(--text); }
+  .red-flags{display:flex;flex-direction:column;gap:7px}
+  .rf-item{display:flex;gap:9px;padding:9px 11px;border-radius:6px;
+           background:#fff1f2;border:1px solid #fecaca;font-size:13px;line-height:1.5}
 
-  /* Red flags */
-  .red-flags { display: flex; flex-direction: column; gap: 8px; }
-  .red-flag-item {
-    display: flex; gap: 10px; padding: 10px 12px; border-radius: 6px;
-    background: #fff1f2; border: 1px solid #fecaca; font-size: 13px;
-    line-height: 1.5;
-  }
-  .rf-icon { flex-shrink: 0; }
+  .contact-grid{display:flex;flex-wrap:wrap;gap:12px}
+  .contact-item{display:flex;align-items:center;gap:7px;font-size:13px}
+  .contact-item a{color:var(--blue);text-decoration:none}
+  .contact-item a:hover{text-decoration:underline}
 
-  /* Contact */
-  .contact-grid { display: flex; flex-wrap: wrap; gap: 16px; }
-  .contact-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-  .contact-item a { color: var(--blue); text-decoration: none; }
-  .contact-item a:hover { text-decoration: underline; }
+  .actions-bar{display:flex;gap:8px;flex-wrap:wrap;padding:14px 22px;
+               border-top:1px solid var(--border);background:#f8fafc;
+               border-radius:0 0 var(--r) var(--r)}
+  .action-btn{padding:8px 15px;border-radius:6px;font-size:12px;font-weight:700;
+              cursor:pointer;border:1px solid;transition:all .15s;
+              display:flex;align-items:center;gap:5px;text-decoration:none}
+  .action-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .action-btn.primary:hover{background:var(--blue2)}
+  .action-btn.secondary{background:#fff;color:var(--text);border-color:var(--border)}
+  .action-btn.secondary:hover{background:var(--bg)}
+  .action-btn.success{background:#f0fdf4;color:var(--green);border-color:#bbf7d0}
+  .action-btn.success:hover{background:#dcfce7}
+  .action-btn.sam{background:#f0fdf4;color:var(--green);border-color:#bbf7d0}
+  .action-btn.sam:hover{background:#dcfce7}
 
-  /* Actions bar */
-  .actions-bar {
-    display: flex; gap: 10px; flex-wrap: wrap; padding: 16px 24px;
-    border-top: 1px solid var(--border); background: #f8fafc;
-    border-radius: 0 0 var(--radius) var(--radius);
-  }
-  .action-btn {
-    padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: 1px solid; transition: all .15s;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .action-btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
-  .action-btn.primary:hover { background: #1d4ed8; }
-  .action-btn.secondary { background: #fff; color: var(--text); border-color: var(--border); }
-  .action-btn.secondary:hover { background: var(--main-bg); }
-  .action-btn.sam-link { background: #f0fdf4; color: var(--green);
-                         border-color: #bbf7d0; }
-  .action-btn.sam-link:hover { background: #dcfce7; }
+  .no-results{padding:36px 14px;text-align:center;color:#475569;font-size:12px}
 
   /* Toast */
-  .toast {
-    position: fixed; bottom: 24px; right: 24px; padding: 12px 18px;
-    background: #0f172a; color: #fff; border-radius: 8px; font-size: 13px;
-    font-weight: 600; box-shadow: var(--shadow-md); z-index: 100;
-    animation: slide-up .25s ease; pointer-events: none;
-  }
-  @keyframes slide-up {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  .toast{position:fixed;bottom:20px;right:20px;padding:11px 16px;background:var(--navy);
+         color:#fff;border-radius:8px;font-size:13px;font-weight:600;
+         box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:100;
+         animation:slide-up .2s ease;pointer-events:none}
+  @keyframes slide-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-  .no-results {
-    padding: 40px 16px; text-align: center; color: #475569; font-size: 13px;
+  @media print{
+    header,.sidebar,.actions-bar{display:none!important}
+    .main{padding:0;overflow:visible}
+    .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+    .bid-card{gap:10px}
   }
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <header>
   <div class="logo">RFP<span>Lens</span></div>
-  <div class="tagline">— AI-powered bid intelligence</div>
+  <div class="tagline">AI-powered bid intelligence</div>
   <div class="key-status" id="keyStatus"></div>
 </header>
 
 <div class="layout">
-  <!-- Sidebar -->
+
+  <!-- ── Sidebar ── -->
   <aside class="sidebar">
-    <!-- Tabs -->
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('sam')">SAM.gov</button>
-      <button class="tab-btn" onclick="switchTab('upload')">Upload</button>
+      <button class="tab-btn" onclick="switchTab('upload')">Upload File</button>
       <button class="tab-btn" onclick="switchTab('notice')">Notice ID</button>
     </div>
 
-    <!-- Search panels -->
     <div class="search-panels">
 
-      <!-- SAM.gov panel -->
+      <!-- SAM.gov search -->
       <div class="panel active" id="panel-sam">
         <div class="field">
-          <label>KEYWORD SEARCH</label>
+          <label>Keyword Search</label>
           <input id="samQuery" type="text" placeholder="e.g. cloud security, IT services…"
                  onkeydown="if(event.key==='Enter') runSearch()" />
         </div>
-        <div class="row-2">
-          <div class="field">
-            <label>FROM (MM/DD/YYYY)</label>
-            <input id="samFrom" type="text" placeholder="01/01/2025" />
+
+        <div>
+          <div class="period-label">Posted Period</div>
+          <div class="period-presets">
+            <button class="preset-btn" data-preset="7d"  onclick="setPreset('7d')">7 days</button>
+            <button class="preset-btn" data-preset="30d" onclick="setPreset('30d')">30 days</button>
+            <button class="preset-btn active" data-preset="90d" onclick="setPreset('90d')">90 days</button>
+            <button class="preset-btn" data-preset="6m"  onclick="setPreset('6m')">6 months</button>
+            <button class="preset-btn" data-preset="1y"  onclick="setPreset('1y')">1 year</button>
+            <button class="preset-btn" data-preset="custom" onclick="setPreset('custom')">Custom</button>
           </div>
-          <div class="field">
-            <label>TO (MM/DD/YYYY)</label>
-            <input id="samTo" type="text" placeholder="today" />
+          <div class="custom-range" id="customRange">
+            <div class="field">
+              <label>From</label>
+              <input type="date" id="samFrom" />
+            </div>
+            <div class="field">
+              <label>To</label>
+              <input type="date" id="samTo" />
+            </div>
           </div>
         </div>
+
         <div class="row-2">
           <div class="field">
-            <label>MAX RESULTS</label>
+            <label>Max Results</label>
             <select id="samLimit">
               <option value="3">3</option>
               <option value="5" selected>5</option>
@@ -375,7 +307,7 @@
             </select>
           </div>
           <div class="field">
-            <label>MODEL</label>
+            <label>Model</label>
             <select id="samModel">
               <option value="gpt-4o" selected>gpt-4o</option>
               <option value="gpt-4o-mini">gpt-4o-mini</option>
@@ -383,169 +315,197 @@
             </select>
           </div>
         </div>
+
         <button class="search-btn" onclick="runSearch()" id="searchBtn">
           Search &amp; Summarize
         </button>
       </div>
 
-      <!-- Upload panel -->
+      <!-- File upload -->
       <div class="panel" id="panel-upload">
-        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()"
-             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+        <div class="dropzone" id="dropzone"
+             onclick="document.getElementById('fileInput').click()"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
              ondrop="handleDrop(event)">
-          <div class="icon">📄</div>
-          <p><strong>Drop a file here</strong> or click to browse<br/>
-             PDF, DOCX, DOC, TXT supported</p>
+          <div class="dz-icon">📄</div>
+          <p><strong>Drop your RFP here</strong> or click to browse</p>
+          <p style="font-size:11px">PDF, DOCX, DOC, TXT</p>
           <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt"
                  onchange="handleFileSelect(event)" />
         </div>
         <div class="field">
-          <label>MODEL</label>
+          <label>Model</label>
           <select id="uploadModel">
             <option value="gpt-4o" selected>gpt-4o</option>
             <option value="gpt-4o-mini">gpt-4o-mini</option>
           </select>
         </div>
         <button class="search-btn" onclick="uploadFile()" id="uploadBtn" disabled>
-          Upload &amp; Summarize
+          Summarize Document
         </button>
       </div>
 
-      <!-- Notice ID panel -->
+      <!-- Notice ID -->
       <div class="panel" id="panel-notice">
         <div class="field">
-          <label>SAM.GOV NOTICE ID</label>
+          <label>SAM.gov Notice ID</label>
           <input id="noticeId" type="text" placeholder="e.g. abc123def456…"
                  onkeydown="if(event.key==='Enter') lookupNotice()" />
         </div>
         <div class="field">
-          <label>MODEL</label>
+          <label>Model</label>
           <select id="noticeModel">
             <option value="gpt-4o" selected>gpt-4o</option>
             <option value="gpt-4o-mini">gpt-4o-mini</option>
           </select>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#94a3b8;">
+        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:#94a3b8;cursor:pointer">
           <input type="checkbox" id="useAttachments" style="accent-color:#3b82f6" />
-          <label for="useAttachments">Include PDF attachments</label>
-        </div>
+          Include PDF attachments
+        </label>
         <button class="search-btn" onclick="lookupNotice()" id="noticeBtn">
           Fetch &amp; Summarize
         </button>
       </div>
-    </div>
 
-    <!-- Results list -->
+    </div><!-- /search-panels -->
+
     <div class="results-header">
-      RESULTS <span class="results-count" id="resultsCount">0</span>
+      Results <span class="results-count" id="resultsCount">0</span>
     </div>
     <div class="results-list" id="resultsList">
-      <div class="no-results">Search SAM.gov or upload a file to get started</div>
+      <div class="no-results">Search SAM.gov or upload a document to get started</div>
     </div>
   </aside>
 
-  <!-- Main detail area -->
+  <!-- ── Main ── -->
   <main class="main" id="main">
     <div class="empty-state">
-      <div class="icon">🔍</div>
+      <div class="es-icon">🔍</div>
       <h2>Find your next bid</h2>
-      <p>Search SAM.gov by keyword, upload an RFP document, or paste a notice ID.
-         We'll extract a structured bid-ready summary in seconds.</p>
+      <p>Search SAM.gov by keyword and date range, upload an RFP document,
+         or look up a specific notice ID.</p>
     </div>
   </main>
-</div>
+
+</div><!-- /layout -->
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-let summaries = [];
-let selectedIndex = -1;
-let pendingFile = null;
-let activeTab = 'sam';
+// ── State ────────────────────────────────────────────────────────────────────
+let summaries = [], selectedIndex = -1, pendingFile = null, activeTab = 'sam';
+let periodFrom = null, periodTo = null, activePreset = '90d';
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   checkStatus();
-  setDefaultDates();
+  setPreset('90d');
+  // default samTo to today
+  document.getElementById('samTo').valueAsDate = new Date();
 });
 
 async function checkStatus() {
   try {
-    const r = await fetch('/api/status');
-    const d = await r.json();
+    const d = await fetch('/api/status').then(r => r.json());
     document.getElementById('keyStatus').innerHTML = `
-      <span class="key-badge ${d.openai_key ? 'ok' : 'err'}">
-        ${d.openai_key ? '✓' : '✗'} OpenAI
-      </span>
-      <span class="key-badge ${d.sam_key ? 'ok' : 'err'}">
-        ${d.sam_key ? '✓' : '✗'} SAM.gov
-      </span>`;
+      <span class="key-badge ${d.openai_key?'ok':'err'}">${d.openai_key?'✓':'✗'} OpenAI</span>
+      <span class="key-badge ${d.sam_key?'ok':'err'}">${d.sam_key?'✓':'✗'} SAM.gov</span>`;
   } catch {}
 }
 
-function setDefaultDates() {
-  const today = new Date();
-  const past = new Date(today);
-  past.setDate(today.getDate() - 90);
-  document.getElementById('samTo').placeholder =
-    today.toLocaleDateString('en-US', { month:'2-digit', day:'2-digit', year:'numeric' });
-}
-
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
+// ── Tabs ─────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
   activeTab = tab;
-  document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    const tabs = ['sam', 'upload', 'notice'];
-    b.classList.toggle('active', tabs[i] === tab);
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['sam','upload','notice'][i] === tab);
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`panel-${tab}`).classList.add('active');
 }
 
-// ─── SAM.gov search ───────────────────────────────────────────────────────────
+// ── Period presets ────────────────────────────────────────────────────────────
+function setPreset(preset) {
+  activePreset = preset;
+  document.querySelectorAll('.preset-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.preset === preset));
+
+  const customRange = document.getElementById('customRange');
+  customRange.classList.toggle('show', preset === 'custom');
+
+  if (preset === 'custom') { periodFrom = null; periodTo = null; return; }
+
+  const today = new Date();
+  const from = new Date(today);
+  if      (preset === '7d')  from.setDate(today.getDate() - 7);
+  else if (preset === '30d') from.setDate(today.getDate() - 30);
+  else if (preset === '90d') from.setDate(today.getDate() - 90);
+  else if (preset === '6m')  from.setMonth(today.getMonth() - 6);
+  else if (preset === '1y')  from.setFullYear(today.getFullYear() - 1);
+
+  periodFrom = toSAMDate(from);
+  periodTo   = toSAMDate(today);
+}
+
+function toSAMDate(d) {
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${mm}/${dd}/${d.getFullYear()}`;
+}
+
+function getDateRange() {
+  if (activePreset === 'custom') {
+    const fromEl = document.getElementById('samFrom');
+    const toEl   = document.getElementById('samTo');
+    const from = fromEl.value ? toSAMDate(new Date(fromEl.value + 'T00:00:00')) : null;
+    const to   = toEl.value   ? toSAMDate(new Date(toEl.value   + 'T00:00:00')) : toSAMDate(new Date());
+    return { from, to };
+  }
+  return { from: periodFrom, to: periodTo };
+}
+
+// ── SAM.gov search ────────────────────────────────────────────────────────────
 async function runSearch() {
   const query = document.getElementById('samQuery').value.trim();
   if (!query) { toast('Enter a keyword to search'); return; }
 
+  const { from, to } = getDateRange();
   const btn = document.getElementById('searchBtn');
   btn.disabled = true; btn.textContent = 'Searching…';
   summaries = []; selectedIndex = -1;
   document.getElementById('resultsList').innerHTML = '';
   document.getElementById('resultsCount').textContent = '0';
-  showEmpty();
-
-  const body = {
-    query,
-    limit: parseInt(document.getElementById('samLimit').value),
-    model: document.getElementById('samModel').value,
-    posted_from: document.getElementById('samFrom').value || null,
-    posted_to: document.getElementById('samTo').value || null,
-  };
+  showEmpty('Searching SAM.gov…');
 
   try {
     const res = await fetch('/api/search', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        query,
+        limit: parseInt(document.getElementById('samLimit').value),
+        model: document.getElementById('samModel').value,
+        posted_from: from,
+        posted_to: to,
+      }),
     });
     if (!res.ok) { const e = await res.json(); throw new Error(e.detail); }
 
     const reader = res.body.getReader();
-    const decoder = new TextDecoder();
+    const dec = new TextDecoder();
     let buf = '';
-
     while (true) {
-      const { done, value } = await reader.read();
+      const {done, value} = await reader.read();
       if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split('\n');
-      buf = lines.pop();
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
-        const ev = JSON.parse(line.slice(6));
-        handleSSE(ev);
+        handleSSE(JSON.parse(line.slice(6)));
       }
     }
   } catch (err) {
     toast('Error: ' + err.message, true);
+    showEmpty();
   } finally {
     btn.disabled = false; btn.textContent = 'Search & Summarize';
   }
@@ -555,15 +515,15 @@ function handleSSE(ev) {
   if (ev.type === 'total') {
     if (ev.count === 0) {
       document.getElementById('resultsList').innerHTML =
-        '<div class="no-results">No opportunities found. Try different keywords or date range.</div>';
+        '<div class="no-results">No opportunities found. Try broader keywords or a wider date range.</div>';
+      showEmpty();
     }
   } else if (ev.type === 'progress') {
     addProgressItem(ev.index, ev.title);
   } else if (ev.type === 'summary') {
-    replaceProgressWithResult(ev.index, ev.data);
     summaries[ev.index] = ev.data;
-    document.getElementById('resultsCount').textContent =
-      summaries.filter(Boolean).length;
+    replaceProgressWithResult(ev.index, ev.data);
+    document.getElementById('resultsCount').textContent = summaries.filter(Boolean).length;
     if (selectedIndex === -1) selectResult(ev.index);
   } else if (ev.type === 'error') {
     toast('Error: ' + ev.message, true);
@@ -580,12 +540,10 @@ function addProgressItem(index, title) {
 
 function replaceProgressWithResult(index, summary) {
   const el = document.getElementById(`progress-${index}`);
-  if (!el) return;
-  const item = buildResultItem(index, summary);
-  el.replaceWith(item);
+  if (el) el.replaceWith(buildResultItem(index, summary));
 }
 
-// ─── File upload ──────────────────────────────────────────────────────────────
+// ── File upload ───────────────────────────────────────────────────────────────
 function handleDragOver(e) {
   e.preventDefault();
   document.getElementById('dropzone').classList.add('drag-over');
@@ -596,18 +554,22 @@ function handleDragLeave() {
 function handleDrop(e) {
   e.preventDefault();
   document.getElementById('dropzone').classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) setPendingFile(file);
+  const f = e.dataTransfer.files[0];
+  if (f) setPendingFile(f);
 }
 function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (file) setPendingFile(file);
+  const f = e.target.files[0];
+  if (f) setPendingFile(f);
 }
 function setPendingFile(file) {
   pendingFile = file;
-  document.getElementById('dropzone').innerHTML = `
-    <div class="icon">📎</div>
-    <p><strong>${esc(file.name)}</strong><br/>${(file.size/1024).toFixed(1)} KB</p>`;
+  const dz = document.getElementById('dropzone');
+  dz.classList.add('file-selected');
+  dz.innerHTML = `
+    <div class="dz-icon">📎</div>
+    <p><strong>${esc(file.name)}</strong></p>
+    <p class="file-meta">${(file.size/1024).toFixed(1)} KB — click to change</p>
+    <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" onchange="handleFileSelect(event)" />`;
   document.getElementById('uploadBtn').disabled = false;
 }
 
@@ -615,34 +577,38 @@ async function uploadFile() {
   if (!pendingFile) return;
   const btn = document.getElementById('uploadBtn');
   btn.disabled = true; btn.textContent = 'Summarizing…';
+  showEmpty('Analyzing document…');
 
   const fd = new FormData();
   fd.append('file', pendingFile);
   fd.append('model', document.getElementById('uploadModel').value);
 
   try {
-    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const r = await fetch('/api/upload', {method:'POST', body:fd});
     if (!r.ok) { const e = await r.json(); throw new Error(e.detail); }
-    const { summary } = await r.json();
+    const {summary} = await r.json();
     addSummary(summary);
-    toast('✓ Summarized: ' + (summary.title || pendingFile.name));
+    toast('✓ Document summarized');
   } catch (err) {
     toast('Error: ' + err.message, true);
+    showEmpty();
   } finally {
-    btn.disabled = false; btn.textContent = 'Upload & Summarize';
+    btn.disabled = false; btn.textContent = 'Summarize Document';
   }
 }
 
-// ─── Notice ID ────────────────────────────────────────────────────────────────
+// ── Notice ID ─────────────────────────────────────────────────────────────────
 async function lookupNotice() {
   const notice_id = document.getElementById('noticeId').value.trim();
   if (!notice_id) { toast('Enter a notice ID'); return; }
   const btn = document.getElementById('noticeBtn');
   btn.disabled = true; btn.textContent = 'Fetching…';
+  showEmpty('Fetching from SAM.gov…');
 
   try {
     const r = await fetch('/api/notice', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         notice_id,
         use_attachments: document.getElementById('useAttachments').checked,
@@ -650,11 +616,12 @@ async function lookupNotice() {
       }),
     });
     if (!r.ok) { const e = await r.json(); throw new Error(e.detail); }
-    const { summary } = await r.json();
+    const {summary} = await r.json();
     addSummary(summary);
-    toast('✓ Fetched notice');
+    toast('✓ Notice fetched');
   } catch (err) {
     toast('Error: ' + err.message, true);
+    showEmpty();
   } finally {
     btn.disabled = false; btn.textContent = 'Fetch & Summarize';
   }
@@ -665,416 +632,333 @@ function addSummary(summary) {
   summaries.push(summary);
   document.getElementById('resultsCount').textContent = summaries.length;
   const list = document.getElementById('resultsList');
-  const noResults = list.querySelector('.no-results');
-  if (noResults) noResults.remove();
+  const noRes = list.querySelector('.no-results');
+  if (noRes) noRes.remove();
   list.appendChild(buildResultItem(index, summary));
   selectResult(index);
 }
 
-// ─── Result list item ─────────────────────────────────────────────────────────
-function buildResultItem(index, summary) {
+// ── Result list item ──────────────────────────────────────────────────────────
+function buildResultItem(index, s) {
   const el = document.createElement('div');
   el.className = 'result-item'; el.id = `result-${index}`;
   el.onclick = () => selectResult(index);
 
-  const due = summary.due_date || '';
-  const daysLeft = daysUntil(due);
-  let dueClass = 'due-none', dueText = due ? formatDate(due) : 'No deadline';
-  if (daysLeft !== null) {
-    if (daysLeft < 0)       { dueClass = 'due-none'; dueText = 'Closed'; }
-    else if (daysLeft <= 14){ dueClass = 'due-soon'; dueText = `⚡ ${daysLeft}d left`; }
-    else                    { dueClass = 'due-ok';   dueText = `${daysLeft}d left`; }
+  const dl = daysUntil(s.due_date);
+  let dueClass = 'due-none', dueText = s.due_date ? fmtDate(s.due_date) : 'No deadline';
+  if (dl !== null) {
+    if (dl < 0)       { dueClass = 'due-none'; dueText = 'Closed'; }
+    else if (dl <= 14){ dueClass = 'due-soon'; dueText = `⚡ ${dl}d left`; }
+    else              { dueClass = 'due-ok';   dueText = `${dl}d left`; }
   }
-
-  const flags = (summary.red_flags || []).length;
-  const org = summary.issuing_organization || '';
-
+  const flags = (s.red_flags||[]).length;
   el.innerHTML = `
-    <div class="ri-title">${esc(summary.title || 'Untitled RFP')}</div>
-    <div class="ri-meta">${esc(org)}${flags ? ` &nbsp;🚩 ${flags} flag${flags>1?'s':''}` : ''}</div>
+    <div class="ri-title">${esc(s.title||'Untitled RFP')}</div>
+    <div class="ri-meta">${esc(s.issuing_organization||'')}${flags?` &nbsp;🚩 ${flags}`:''}
+    </div>
     <div class="ri-due ${dueClass}">${dueText}</div>`;
   return el;
 }
 
-// ─── Select & render detail ───────────────────────────────────────────────────
+// ── Select & render detail ────────────────────────────────────────────────────
 function selectResult(index) {
-  document.querySelectorAll('.result-item').forEach(el => el.classList.remove('active'));
-  const el = document.getElementById(`result-${index}`);
-  if (el) el.classList.add('active');
+  document.querySelectorAll('.result-item').forEach(e => e.classList.remove('active'));
+  document.getElementById(`result-${index}`)?.classList.add('active');
   selectedIndex = index;
   renderDetail(summaries[index]);
 }
 
-function showEmpty() {
-  document.getElementById('main').innerHTML = `
-    <div class="empty-state">
-      <div class="icon">🔍</div>
-      <h2>Find your next bid</h2>
-      <p>Results will appear as they're summarized.</p>
-    </div>`;
+function showEmpty(msg) {
+  document.getElementById('main').innerHTML = msg
+    ? `<div class="empty-state">
+         <div class="es-icon" style="animation:spin 1.2s linear infinite">⚙️</div>
+         <p style="margin-top:8px;font-size:14px;color:#334155">${esc(msg)}</p>
+       </div>`
+    : `<div class="empty-state">
+         <div class="es-icon">🔍</div>
+         <h2>Find your next bid</h2>
+         <p>Search SAM.gov by keyword and date range, upload an RFP document,
+            or look up a specific notice ID.</p>
+       </div>`;
 }
 
+// ── Detail card ───────────────────────────────────────────────────────────────
 function renderDetail(s) {
-  const main = document.getElementById('main');
   if (!s) { showEmpty(); return; }
 
-  const daysLeft = daysUntil(s.due_date);
-  const budget = s.budget?.amount || s.budget || '';
+  const dl = daysUntil(s.due_date);
+  const budget = typeof s.budget === 'object' ? s.budget?.amount : s.budget;
   const redFlags = s.red_flags || [];
   const eligibility = s.eligibility || [];
   const scopes = s.scope_of_work || [];
-  const mandatoryReqs = s.requirements?.mandatory || [];
-  const preferredReqs = s.requirements?.preferred || [];
-  const evalCriteria = s.evaluation_criteria || [];
+  const mandatory = (s.requirements||{}).mandatory || [];
+  const preferred = (s.requirements||{}).preferred || [];
+  const evalCrit = s.evaluation_criteria || [];
   const keyDates = s.key_dates || [];
   const contact = s.contact || {};
-  const attachments = s.attachments || [];
-
-  // Build scorecard items
-  const scoreItems = buildScorecard(s, daysLeft);
-
-  // Evaluation bars HTML
-  const evalHTML = evalCriteria.length
-    ? evalCriteria.map(c => {
-        const pct = parseFloat(c.weight) || 0;
-        return `<div class="eval-item">
-          <div class="eval-row">
-            <span>${esc(c.criterion)}</span>
-            <span class="eval-pct">${esc(c.weight || '—')}</span>
-          </div>
-          ${pct ? `<div class="eval-bar"><div class="eval-fill" style="width:${Math.min(pct,100)}%"></div></div>` : ''}
-        </div>`;
-      }).join('')
-    : '<p style="color:var(--text-muted);font-size:13px">Not specified</p>';
-
-  // Key dates HTML
-  const allDates = [];
-  if (s.issue_date)          allDates.push({ event: 'RFP Issued', date: s.issue_date });
-  if (s.questions_deadline)  allDates.push({ event: 'Questions Due', date: s.questions_deadline });
-  keyDates.forEach(d => allDates.push(d));
-  if (s.due_date)            allDates.push({ event: 'Proposals Due', date: s.due_date });
-
-  const datesHTML = allDates.length
-    ? allDates.map(d => `
-        <div class="timeline-item">
-          <span class="tl-date">${esc(d.date || '')}</span>
-          <span class="tl-event">${esc(d.event || '')}</span>
-        </div>`).join('')
-    : '<p style="color:var(--text-muted);font-size:13px">No key dates found</p>';
-
-  // Stats strip
-  const dueStat = daysLeft === null ? '—'
-    : daysLeft < 0 ? 'Closed'
-    : `${daysLeft} days`;
-  const dueClass = daysLeft !== null && daysLeft >= 0 && daysLeft <= 14 ? 'urgent'
-    : daysLeft !== null && daysLeft >= 0 ? 'ok' : '';
-
   const samLink = s._sam_link || s.sam_gov_link || '';
-  const noticeId = s._notice_id || '';
 
-  main.innerHTML = `
+  // Stats
+  const dueLabel = dl === null ? '—' : dl < 0 ? 'Closed' : `${dl} days`;
+  const dueCls = dl !== null && dl >= 0 && dl <= 14 ? 'urgent'
+               : dl !== null && dl >= 0 ? 'ok' : '';
+
+  // Dates timeline
+  const allDates = [];
+  if (s.issue_date)         allDates.push({event:'RFP Issued', date:s.issue_date});
+  if (s.questions_deadline) allDates.push({event:'Questions Due', date:s.questions_deadline});
+  keyDates.forEach(d => allDates.push(d));
+  if (s.due_date)           allDates.push({event:'Proposals Due', date:s.due_date});
+
+  document.getElementById('main').innerHTML = `
   <div class="bid-card">
 
-    <!-- Hero card -->
+    <!-- Hero -->
     <div class="card">
       <div class="card-header">
         <div class="hero-badges">
           ${s.rfp_number ? `<span class="badge badge-gray">${esc(s.rfp_number)}</span>` : ''}
           ${s.contract_type ? `<span class="badge badge-blue">${esc(s.contract_type)}</span>` : ''}
-          ${eligibility.map(e => `<span class="badge badge-purple">${esc(e)}</span>`).join('')}
-          ${s._source === 'sam' ? `<span class="badge badge-green">SAM.gov</span>` : `<span class="badge badge-gray">Uploaded</span>`}
+          ${eligibility.map(e=>`<span class="badge badge-purple">${esc(e)}</span>`).join('')}
+          <span class="badge ${s._source==='upload'?'badge-gray':'badge-green'}">${s._source==='upload'?'Uploaded':'SAM.gov'}</span>
         </div>
-        <div class="hero-title">${esc(s.title || 'Untitled RFP')}</div>
-        <div class="hero-sub">${esc(s.issuing_organization || '')}${s.issue_date ? ' &nbsp;·&nbsp; Issued ' + esc(s.issue_date) : ''}</div>
+        <div class="hero-title">${esc(s.title||'Untitled RFP')}</div>
+        <div class="hero-sub">${esc(s.issuing_organization||'')}${s.issue_date?' &nbsp;·&nbsp; Issued '+esc(s.issue_date):''}</div>
       </div>
 
-      <!-- Stats strip -->
       <div class="stats-strip">
-        <div class="stat">
-          <span class="stat-label">Budget</span>
-          <span class="stat-value">${esc(budget || '—')}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Contract Type</span>
-          <span class="stat-value">${esc(s.contract_type || '—')}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Period</span>
-          <span class="stat-value">${esc(s.contract_period || '—')}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Proposal Due</span>
-          <span class="stat-value ${dueClass}">${esc(s.due_date || '—')}</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Days Left</span>
-          <span class="stat-value ${dueClass}">${dueStat}</span>
-        </div>
+        <div class="stat"><span class="stat-label">Budget</span><span class="stat-value">${esc(budget||'—')}</span></div>
+        <div class="stat"><span class="stat-label">Contract</span><span class="stat-value">${esc(s.contract_type||'—')}</span></div>
+        <div class="stat"><span class="stat-label">Period</span><span class="stat-value">${esc(s.contract_period||'—')}</span></div>
+        <div class="stat"><span class="stat-label">Due Date</span><span class="stat-value ${dueCls}">${esc(s.due_date||'—')}</span></div>
+        <div class="stat"><span class="stat-label">Days Left</span><span class="stat-value ${dueCls}">${dueLabel}</span></div>
       </div>
 
       <div class="card-body">
-        <!-- Overview -->
-        ${s.project_overview ? `
-          <div class="card-section">
+        ${s.project_overview?`
+          <div style="margin-bottom:18px">
             <div class="section-title">Overview</div>
-            <p style="font-size:14px;line-height:1.7;color:var(--text)">${esc(s.project_overview)}</p>
-          </div>` : ''}
-
-        <!-- Bid Scorecard -->
-        <div class="card-section">
-          <div class="section-title">Bid Scorecard</div>
-          <div class="scorecard">${scoreItems}</div>
-        </div>
+            <p style="font-size:13px;line-height:1.7">${esc(s.project_overview)}</p>
+          </div>`:''}
+        <div class="section-title">Bid Scorecard</div>
+        <div class="scorecard">${buildScorecard(s, dl)}</div>
       </div>
 
-      <!-- Actions bar -->
       <div class="actions-bar">
-        <button class="action-btn primary" onclick="exportJSON()">⬇ Export JSON</button>
+        <button class="action-btn primary" onclick="downloadDocx()">⬇ Download Word</button>
+        <button class="action-btn secondary" onclick="downloadJSON()">{ } Export JSON</button>
         <button class="action-btn secondary" onclick="copyText()">⎘ Copy Summary</button>
         <button class="action-btn secondary" onclick="window.print()">🖨 Print</button>
-        ${samLink ? `<a class="action-btn sam-link" href="${esc(samLink)}" target="_blank">↗ View on SAM.gov</a>` : ''}
+        ${samLink?`<a class="action-btn sam" href="${esc(samLink)}" target="_blank">↗ SAM.gov</a>`:''}
       </div>
     </div>
 
     <!-- Scope + Eval -->
     <div class="two-col">
-      <div class="card">
-        <div class="card-body">
-          <div class="section-title">Scope of Work</div>
-          ${scopes.length
-            ? `<ul class="item-list">${scopes.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`
-            : `<p style="color:var(--text-muted);font-size:13px">Not specified</p>`}
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <div class="section-title">Evaluation Criteria</div>
-          <div class="eval-list">${evalHTML}</div>
-        </div>
-      </div>
+      <div class="card"><div class="card-body">
+        <div class="section-title">Scope of Work</div>
+        ${scopes.length
+          ?`<ul class="item-list">${scopes.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`
+          :`<p style="color:var(--muted);font-size:13px">Not specified</p>`}
+      </div></div>
+      <div class="card"><div class="card-body">
+        <div class="section-title">Evaluation Criteria</div>
+        ${evalCrit.length
+          ?`<div class="eval-list">${evalCrit.map(c=>{
+              const pct=parseFloat(c.weight)||0;
+              return `<div class="eval-item">
+                <div class="eval-row"><span>${esc(c.criterion)}</span><span class="eval-pct">${esc(c.weight||'—')}</span></div>
+                ${pct?`<div class="eval-bar"><div class="eval-fill" style="width:${Math.min(pct,100)}%"></div></div>`:''}
+              </div>`;}).join('')}</div>`
+          :`<p style="color:var(--muted);font-size:13px">Not specified</p>`}
+      </div></div>
     </div>
 
     <!-- Requirements -->
-    ${(mandatoryReqs.length || preferredReqs.length) ? `
-    <div class="card">
-      <div class="card-body">
-        <div class="section-title">Requirements</div>
-        ${mandatoryReqs.length ? `
-          <p style="font-size:11px;font-weight:800;color:var(--red);letter-spacing:.5px;margin-bottom:8px">MANDATORY</p>
-          <div class="tag-list" style="margin-bottom:16px">
-            ${mandatoryReqs.map(r=>`<span class="tag tag-req">${esc(r)}</span>`).join('')}
-          </div>` : ''}
-        ${preferredReqs.length ? `
-          <p style="font-size:11px;font-weight:800;color:var(--blue);letter-spacing:.5px;margin-bottom:8px">PREFERRED</p>
-          <div class="tag-list">
-            ${preferredReqs.map(r=>`<span class="tag tag-pref">${esc(r)}</span>`).join('')}
-          </div>` : ''}
-      </div>
-    </div>` : ''}
+    ${mandatory.length||preferred.length?`
+    <div class="card"><div class="card-body">
+      <div class="section-title">Requirements</div>
+      ${mandatory.length?`
+        <p style="font-size:10px;font-weight:800;color:var(--red);letter-spacing:.5px;margin-bottom:7px">MANDATORY</p>
+        <div class="tag-list" style="margin-bottom:14px">${mandatory.map(r=>`<span class="tag tag-req">${esc(r)}</span>`).join('')}</div>`:''}
+      ${preferred.length?`
+        <p style="font-size:10px;font-weight:800;color:var(--blue);letter-spacing:.5px;margin-bottom:7px">PREFERRED</p>
+        <div class="tag-list">${preferred.map(r=>`<span class="tag tag-pref">${esc(r)}</span>`).join('')}</div>`:''}
+    </div></div>`:''}
 
-    <!-- Key Dates -->
-    <div class="card">
-      <div class="card-body">
-        <div class="section-title">Key Dates</div>
-        <div class="timeline">${datesHTML}</div>
+    <!-- Dates -->
+    <div class="card"><div class="card-body">
+      <div class="section-title">Key Dates</div>
+      <div class="timeline">
+        ${allDates.length
+          ?allDates.map(d=>`<div class="tl-item"><span class="tl-date">${esc(d.date||'')}</span><span>${esc(d.event||'')}</span></div>`).join('')
+          :`<p style="color:var(--muted);font-size:13px">No dates found</p>`}
       </div>
-    </div>
+    </div></div>
 
     <!-- Submission + Contact -->
     <div class="two-col">
-      <div class="card">
-        <div class="card-body">
-          <div class="section-title">Submission Requirements</div>
-          ${(s.submission_requirements||[]).length
-            ? `<ul class="item-list">${(s.submission_requirements||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`
-            : `<p style="color:var(--text-muted);font-size:13px">${esc(s.submission_format || 'Not specified')}</p>`}
+      <div class="card"><div class="card-body">
+        <div class="section-title">Submission Requirements</div>
+        ${(s.submission_requirements||[]).length
+          ?`<ul class="item-list">${(s.submission_requirements||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`
+          :`<p style="color:var(--muted);font-size:13px">${esc(s.submission_format||'Not specified')}</p>`}
+      </div></div>
+      <div class="card"><div class="card-body">
+        <div class="section-title">Point of Contact</div>
+        <div class="contact-grid">
+          ${contact.name ?`<div class="contact-item">👤 <span>${esc(contact.name)}</span></div>`:''}
+          ${contact.email?`<div class="contact-item">✉️ <a href="mailto:${esc(contact.email)}">${esc(contact.email)}</a></div>`:''}
+          ${contact.phone?`<div class="contact-item">📞 <a href="tel:${esc(contact.phone)}">${esc(contact.phone)}</a></div>`:''}
+          ${!contact.name&&!contact.email&&!contact.phone
+            ?`<p style="color:var(--muted);font-size:13px">Not specified</p>`:''}
         </div>
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <div class="section-title">Point of Contact</div>
-          <div class="contact-grid">
-            ${contact.name  ? `<div class="contact-item">👤 <span>${esc(contact.name)}</span></div>` : ''}
-            ${contact.email ? `<div class="contact-item">✉️ <a href="mailto:${esc(contact.email)}">${esc(contact.email)}</a></div>` : ''}
-            ${contact.phone ? `<div class="contact-item">📞 <a href="tel:${esc(contact.phone)}">${esc(contact.phone)}</a></div>` : ''}
-            ${!contact.name && !contact.email && !contact.phone
-              ? `<p style="color:var(--text-muted);font-size:13px">Not specified</p>` : ''}
-          </div>
-          ${attachments.length ? `
-            <div style="margin-top:16px">
-              <div class="section-title">Attachments</div>
-              <ul class="item-list">${attachments.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>
-            </div>` : ''}
-        </div>
-      </div>
+        ${(s.attachments||[]).length?`
+          <div style="margin-top:14px">
+            <div class="section-title">Attachments</div>
+            <ul class="item-list">${(s.attachments||[]).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>
+          </div>`:''}
+      </div></div>
     </div>
 
-    <!-- Red Flags -->
-    ${redFlags.length ? `
-    <div class="card" style="border-color:#fecaca">
-      <div class="card-body">
-        <div class="section-title" style="color:var(--red)">⚠ Red Flags</div>
-        <div class="red-flags">
-          ${redFlags.map(f=>`
-            <div class="red-flag-item">
-              <span class="rf-icon">🚩</span>
-              <span>${esc(f)}</span>
-            </div>`).join('')}
-        </div>
+    <!-- Red flags -->
+    ${redFlags.length?`
+    <div class="card" style="border-color:#fecaca"><div class="card-body">
+      <div class="section-title" style="color:var(--red)">⚠ Red Flags</div>
+      <div class="red-flags">${redFlags.map(f=>`
+        <div class="rf-item"><span>🚩</span><span>${esc(f)}</span></div>`).join('')}
       </div>
-    </div>` : ''}
+    </div></div>`:''}
 
   </div>`;
 }
 
-// ─── Scorecard builder ────────────────────────────────────────────────────────
-function buildScorecard(s, daysLeft) {
+// ── Scorecard ─────────────────────────────────────────────────────────────────
+function buildScorecard(s, dl) {
   const items = [];
-  const eligibility = (s.eligibility || []).join(' ').toLowerCase();
-  const mandatoryReqs = s.requirements?.mandatory || [];
-  const reqs = mandatoryReqs.join(' ').toLowerCase();
-  const budget = s.budget?.amount || s.budget || '';
-  const flags = (s.red_flags || []).length;
+  const elig = (s.eligibility||[]).join(' ').toLowerCase();
+  const reqs = ((s.requirements||{}).mandatory||[]).join(' ').toLowerCase();
+  const flags = (s.red_flags||[]).length;
+  const budget = typeof s.budget==='object' ? s.budget?.amount : (s.budget||'');
+  const flagText = (s.red_flags||[]).join(' ').toLowerCase();
 
-  // Deadline urgency
-  if (daysLeft !== null && daysLeft >= 0) {
-    if (daysLeft <= 7)
-      items.push({ cls:'flag', icon:'⏰', text: `Only ${daysLeft} days to bid deadline` });
-    else if (daysLeft <= 21)
-      items.push({ cls:'warn', icon:'📅', text: `${daysLeft} days until proposal due` });
-    else
-      items.push({ cls:'good', icon:'✅', text: `${daysLeft} days to prepare proposal` });
+  if (dl !== null && dl >= 0) {
+    if (dl <= 7)       items.push({c:'flag', i:'⏰', t:`Only ${dl} days until deadline`});
+    else if (dl <= 21) items.push({c:'warn', i:'📅', t:`${dl} days until proposal due`});
+    else               items.push({c:'good', i:'✅', t:`${dl} days to prepare`});
   }
-
-  // Set-aside
-  if (eligibility.includes('small business'))
-    items.push({ cls:'good', icon:'🏢', text: 'Small Business set-aside' });
-  if (eligibility.includes('8(a)') || eligibility.includes('8a'))
-    items.push({ cls:'info', icon:'🏷️', text: '8(a) program set-aside' });
-  if (eligibility.includes('woman') || eligibility.includes('wosb'))
-    items.push({ cls:'info', icon:'🏷️', text: 'WOSB set-aside' });
-  if (eligibility.includes('hubzone'))
-    items.push({ cls:'info', icon:'🏷️', text: 'HUBZone set-aside' });
-
-  // Clearance
-  if (reqs.includes('top secret') || reqs.includes('ts/sci'))
-    items.push({ cls:'warn', icon:'🔐', text: 'TS/SCI clearance required' });
-  else if (reqs.includes('secret clearance'))
-    items.push({ cls:'warn', icon:'🔒', text: 'Secret clearance required' });
-
-  // FedRAMP
-  if (reqs.includes('fedramp'))
-    items.push({ cls:'warn', icon:'🛡️', text: 'FedRAMP authorization required' });
-
-  // Budget
+  if (elig.includes('small business'))  items.push({c:'good', i:'🏢', t:'Small Business set-aside'});
+  if (elig.includes('8(a)')||elig.includes('8a')) items.push({c:'info', i:'🏷️', t:'8(a) set-aside'});
+  if (elig.includes('wosb'))            items.push({c:'info', i:'🏷️', t:'WOSB set-aside'});
+  if (elig.includes('hubzone'))         items.push({c:'info', i:'🏷️', t:'HUBZone set-aside'});
+  if (reqs.includes('ts/sci')||reqs.includes('top secret')) items.push({c:'warn', i:'🔐', t:'TS/SCI clearance required'});
+  else if (reqs.includes('secret clearance'))               items.push({c:'warn', i:'🔒', t:'Secret clearance required'});
+  if (reqs.includes('fedramp'))         items.push({c:'warn', i:'🛡️', t:'FedRAMP authorization required'});
   if (budget) {
-    const m = budget.match(/[\d,.]+/);
-    const val = m ? parseFloat(m[0].replace(/,/g,'')) : 0;
-    if (val >= 1_000_000)
-      items.push({ cls:'good', icon:'💰', text: `Est. value: ${budget}` });
-    else if (val > 0)
-      items.push({ cls:'info', icon:'💵', text: `Budget: ${budget}` });
+    const m = String(budget).match(/[\d,.]+/);
+    if (m && parseFloat(m[0].replace(/,/g,'')) >= 1e6)
+      items.push({c:'good', i:'💰', t:`Est. value: ${budget}`});
+    else if (m)
+      items.push({c:'info', i:'💵', t:`Budget: ${budget}`});
   }
-
-  // Red flags
-  if (flags === 0)
-    items.push({ cls:'good', icon:'✅', text: 'No red flags identified' });
-  else if (flags <= 2)
-    items.push({ cls:'warn', icon:'⚠️', text: `${flags} red flag${flags>1?'s':''} — review carefully` });
-  else
-    items.push({ cls:'flag', icon:'🚩', text: `${flags} red flags — high risk` });
-
-  // Award without discussions
-  const flagText = (s.red_flags || []).join(' ').toLowerCase();
-  if (flagText.includes('without discussion') || flagText.includes('best offer'))
-    items.push({ cls:'warn', icon:'🎯', text: 'Award without discussions likely' });
-
-  // Incumbent indicators
-  if (reqs.includes('incumbent') || reqs.includes('current contractor'))
-    items.push({ cls:'warn', icon:'👤', text: 'Incumbent contractor referenced' });
-
-  // Contract type
+  if (flags === 0)      items.push({c:'good', i:'✅', t:'No red flags identified'});
+  else if (flags <= 2)  items.push({c:'warn', i:'⚠️', t:`${flags} red flag${flags>1?'s':''} — review carefully`});
+  else                  items.push({c:'flag', i:'🚩', t:`${flags} red flags — high risk`});
+  if (flagText.includes('without discussion')||flagText.includes('best offer'))
+    items.push({c:'warn', i:'🎯', t:'Award without discussions likely'});
   if (s.contract_type) {
     const ct = s.contract_type.toLowerCase();
-    if (ct.includes('fixed'))
-      items.push({ cls:'info', icon:'📋', text: `Fixed-price contract` });
-    else if (ct.includes('idiq'))
-      items.push({ cls:'info', icon:'📋', text: 'IDIQ contract vehicle' });
-    else if (ct.includes('time') || ct.includes('t&m'))
-      items.push({ cls:'info', icon:'📋', text: 'Time & Materials contract' });
+    if (ct.includes('fixed'))  items.push({c:'info', i:'📋', t:'Firm Fixed-Price contract'});
+    else if (ct.includes('idiq')) items.push({c:'info', i:'📋', t:'IDIQ contract vehicle'});
+    else if (ct.includes('t&m')||ct.includes('time')) items.push({c:'info', i:'📋', t:'Time & Materials contract'});
   }
-
-  return items.map(i => `
-    <div class="score-item ${i.cls}">
-      <span class="score-icon">${i.icon}</span>
-      <span class="score-text">${esc(i.text)}</span>
-    </div>`).join('') || '<div class="score-item info"><span class="score-icon">ℹ️</span><span class="score-text">Insufficient data for scorecard</span></div>';
+  return items.map(({c,i,t}) => `
+    <div class="score-item ${c}">
+      <span class="si">${i}</span><span>${esc(t)}</span>
+    </div>`).join('') || `<div class="score-item info"><span class="si">ℹ️</span><span>Insufficient data for scorecard</span></div>`;
 }
 
-// ─── Actions ──────────────────────────────────────────────────────────────────
-function exportJSON() {
+// ── Actions ───────────────────────────────────────────────────────────────────
+async function downloadDocx() {
+  if (selectedIndex < 0) return;
+  try {
+    const r = await fetch('/api/download/docx', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({summary: summaries[selectedIndex]}),
+    });
+    if (!r.ok) { const e = await r.json(); throw new Error(e.detail); }
+    const blob = await r.blob();
+    const cd = r.headers.get('Content-Disposition') || '';
+    const name = cd.match(/filename="([^"]+)"/)?.[1] || 'rfp_summary.docx';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+    toast('✓ Word document downloaded');
+  } catch (err) {
+    toast('Error: ' + err.message, true);
+  }
+}
+
+function downloadJSON() {
   if (selectedIndex < 0) return;
   const s = summaries[selectedIndex];
-  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(s, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `rfp_${(s.rfp_number || 'summary').replace(/[^a-z0-9]/gi,'_')}.json`;
-  a.click(); URL.revokeObjectURL(url);
+  const safe = (s.rfp_number||'summary').replace(/[^a-z0-9]/gi,'_');
+  a.href = url; a.download = `rfp_${safe}.json`; a.click();
+  URL.revokeObjectURL(url);
   toast('JSON exported');
 }
 
 function copyText() {
   if (selectedIndex < 0) return;
   const s = summaries[selectedIndex];
+  const budget = typeof s.budget==='object' ? s.budget?.amount : s.budget;
   const lines = [
-    `RFP SUMMARY — ${s.title || 'Untitled'}`,
-    `${'─'.repeat(60)}`,
-    s.issuing_organization ? `Agency: ${s.issuing_organization}` : '',
-    s.rfp_number ? `Solicitation: ${s.rfp_number}` : '',
-    s.due_date ? `Due: ${s.due_date}` : '',
-    s.budget?.amount ? `Budget: ${s.budget.amount}` : '',
-    s.contract_type ? `Contract: ${s.contract_type}` : '',
+    `RFP SUMMARY — ${s.title||'Untitled'}`,
+    '─'.repeat(60),
+    s.issuing_organization ? `Agency:       ${s.issuing_organization}` : '',
+    s.rfp_number           ? `Solicitation: ${s.rfp_number}` : '',
+    s.due_date             ? `Due:          ${s.due_date}` : '',
+    budget                 ? `Budget:       ${budget}` : '',
+    s.contract_type        ? `Contract:     ${s.contract_type}` : '',
     '',
     s.project_overview ? `OVERVIEW\n${s.project_overview}` : '',
     '',
-    (s.requirements?.mandatory||[]).length
-      ? `MANDATORY REQUIREMENTS\n${(s.requirements.mandatory).map(r=>`• ${r}`).join('\n')}` : '',
+    ((s.requirements||{}).mandatory||[]).length
+      ? `MANDATORY REQUIREMENTS\n${s.requirements.mandatory.map(r=>`• ${r}`).join('\n')}` : '',
     '',
     (s.red_flags||[]).length ? `RED FLAGS\n${s.red_flags.map(f=>`⚠ ${f}`).join('\n')}` : '',
   ].filter(Boolean).join('\n');
-
   navigator.clipboard.writeText(lines).then(() => toast('Copied to clipboard'));
 }
 
-// ─── Utilities ────────────────────────────────────────────────────────────────
-function daysUntil(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (isNaN(d)) return null;
-  return Math.ceil((d - Date.now()) / 86400000);
-}
-
-function formatDate(str) {
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function daysUntil(str) {
+  if (!str) return null;
   const d = new Date(str);
-  return isNaN(d) ? str : d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  return isNaN(d) ? null : Math.ceil((d - Date.now()) / 86400000);
 }
-
-function esc(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+function fmtDate(str) {
+  const d = new Date(str);
+  return isNaN(d) ? str : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-let toastTimer;
-function toast(msg, isErr = false) {
-  clearTimeout(toastTimer);
-  const existing = document.querySelector('.toast');
-  if (existing) existing.remove();
+let _toastTimer;
+function toast(msg, err=false) {
+  clearTimeout(_toastTimer);
+  document.querySelector('.toast')?.remove();
   const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  if (isErr) el.style.background = '#7f1d1d';
+  el.className = 'toast'; el.textContent = msg;
+  if (err) el.style.background = '#7f1d1d';
   document.body.appendChild(el);
-  toastTimer = setTimeout(() => el.remove(), 3000);
+  _toastTimer = setTimeout(() => el.remove(), 3000);
 }
 </script>
 </body>
