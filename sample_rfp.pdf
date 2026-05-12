@@ -1,0 +1,184 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Contents 6 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Contents 7 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Contents 8 0 R /Resources << /Font << /F1 9 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 2098 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(REQUEST FOR PROPOSAL) Tj T*
+() Tj T*
+(Solicitation No.: DHS-2025-ICT-0042) Tj T*
+(Issued by: U.S. Department of Homeland Security) Tj T*
+(Office of the Chief Information Officer) Tj T*
+(Issue Date: March 1, 2025) Tj T*
+() Tj T*
+(PROJECT TITLE: Enterprise Cloud Security Operations Platform) Tj T*
+() Tj T*
+(1. INTRODUCTION) Tj T*
+() Tj T*
+(The Department of Homeland Security \(DHS\), Office of the Chief Information Officer) Tj T*
+(\(OCIO\), is soliciting proposals from qualified vendors to design, implement, and) Tj T*
+(operate an Enterprise Cloud Security Operations Platform \(ECSOP\). The platform) Tj T*
+(must provide continuous monitoring, threat detection, and incident response) Tj T*
+(capabilities across DHS cloud environments \(AWS GovCloud, Azure Government, and) Tj T*
+(on-premises hybrid infrastructure\).) Tj T*
+() Tj T*
+(2. SCOPE OF WORK) Tj T*
+() Tj T*
+(The contractor shall:) Tj T*
+(- Design and deploy a Security Information and Event Management \(SIEM\) system) Tj T*
+(  capable of ingesting 500,000+ events per second) Tj T*
+(- Implement a Security Orchestration, Automation, and Response \(SOAR\) platform) Tj T*
+(- Provide 24x7x365 Security Operations Center \(SOC\) staffing with cleared personnel) Tj T*
+(- Develop and maintain 200+ detection rules aligned to MITRE ATT&CK framework) Tj T*
+(- Deliver monthly threat intelligence reports and quarterly security posture assessments) Tj T*
+(- Integrate with existing DHS identity management and ticketing systems) Tj T*
+(- Conduct quarterly red team exercises and penetration testing) Tj T*
+() Tj T*
+(3. MANDATORY REQUIREMENTS) Tj T*
+() Tj T*
+(- Contractor must hold a current FedRAMP High authorization or equivalent) Tj T*
+(- All personnel must hold active Secret clearance \(TS/SCI required for senior roles\)) Tj T*
+(- Platform must achieve 99.99% uptime SLA) Tj T*
+(- All data must remain within FedRAMP-authorized U.S.-based data centers) Tj T*
+(- Contractor must comply with NIST SP 800-53 Rev 5 and DHS 4300A) Tj T*
+(- Zero-trust architecture implementation required) Tj T*
+() Tj T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 1810 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+(4. PREFERRED QUALIFICATIONS) Tj T*
+() Tj T*
+(- Prior DHS or IC agency contract experience) Tj T*
+(- CMMC Level 2 or higher certification) Tj T*
+(- Existing integrations with Splunk, Microsoft Sentinel, or Palo Alto Cortex XSOAR) Tj T*
+(- ISO 27001 and SOC 2 Type II certifications) Tj T*
+() Tj T*
+(5. EVALUATION CRITERIA) Tj T*
+() Tj T*
+(Proposals will be evaluated on the following factors \(listed in order of importance\):) Tj T*
+() Tj T*
+(1. Technical Approach and Security Architecture       - 35%) Tj T*
+(2. Management Approach and Staffing Plan              - 25%) Tj T*
+(3. Price / Total Cost of Ownership \(5-year\)           - 25%) Tj T*
+(4. Past Performance \(minimum 3 relevant references\)   - 15%) Tj T*
+() Tj T*
+(6. CONTRACT DETAILS) Tj T*
+() Tj T*
+(Contract Type: Firm Fixed Price \(FFP\) with award fee provisions) Tj T*
+(Estimated Value: $47,500,000 \(over base + option periods\)) Tj T*
+(Base Period: 12 months from Notice to Proceed) Tj T*
+(Option Periods: Four \(4\) one-year options) Tj T*
+(Place of Performance: Washington, D.C. Metro area; remote work permitted up to 40%) Tj T*
+() Tj T*
+(7. SET-ASIDE) Tj T*
+() Tj T*
+(This acquisition is set aside 100% for Small Business concerns under) Tj T*
+(NAICS code 541519 \(Other Computer Related Services\), size standard $34M.) Tj T*
+() Tj T*
+(8. KEY DATES) Tj T*
+() Tj T*
+(- RFP Release:                    March 1, 2025) Tj T*
+(- Industry Day / Bidder Q&A:      March 14, 2025 at 10:00 AM ET \(virtual\)) Tj T*
+(- Questions Deadline:             March 21, 2025 at 5:00 PM ET) Tj T*
+(- Government Responses to Q&A:   April 4, 2025) Tj T*
+(- Proposal Due Date:              April 25, 2025 at 2:00 PM ET) Tj T*
+(- Anticipated Award:              June 15, 2025) Tj T*
+() Tj T*
+(9. SUBMISSION REQUIREMENTS) Tj T*
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 1818 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+14 TL
+() Tj T*
+(Proposals must include:) Tj T*
+(- Volume I: Technical Approach \(max 40 pages\)) Tj T*
+(- Volume II: Management Approach and Staffing Plan \(max 20 pages\)) Tj T*
+(- Volume III: Past Performance \(max 5 pages per reference, minimum 3\)) Tj T*
+(- Volume IV: Price/Cost \(no page limit; use provided Price Template\)) Tj T*
+(- Signed representations and certifications \(SAM.gov current registration required\)) Tj T*
+() Tj T*
+(10. SUBMISSION INSTRUCTIONS) Tj T*
+() Tj T*
+(Submit proposals electronically via the DHS eSRS portal by the deadline above.) Tj T*
+(Hard copy submissions will NOT be accepted. Late proposals will not be considered.) Tj T*
+() Tj T*
+(11. POINT OF CONTACT) Tj T*
+() Tj T*
+(Contracting Officer: Michael R. Torres) Tj T*
+(Email: michael.torres@dhs.gov) Tj T*
+(Phone: \(202\) 555-0198) Tj T*
+() Tj T*
+(Contracting Specialist: Priya Anand) Tj T*
+(Email: priya.anand@dhs.gov) Tj T*
+() Tj T*
+(12. ATTACHMENTS) Tj T*
+() Tj T*
+(Attachment A: Statement of Work \(SOW\) - Full Detail) Tj T*
+(Attachment B: Price/Cost Template \(Excel\)) Tj T*
+(Attachment C: DHS Security Requirements Guide) Tj T*
+(Attachment D: Sample Contract Clauses) Tj T*
+(Attachment E: System Architecture Overview \(For Reference Only\)) Tj T*
+() Tj T*
+(13. RED FLAGS / SPECIAL CLAUSES) Tj T*
+() Tj T*
+(NOTE: The Government reserves the right to award without discussions.) Tj T*
+(Offerors are cautioned that the Government may make award based on initial) Tj T*
+(proposals; therefore, offerors should submit their best offer initially.) Tj T*
+() Tj T*
+(All awardees will be subject to a 30-day transition-in period with no) Tj T*
+(additional compensation. Failure to achieve full operational capability) Tj T*
+(within 30 days may result in contract termination for default.) Tj T*
+() Tj T*
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000000379 00000 n 
+0000000505 00000 n 
+0000002655 00000 n 
+0000004517 00000 n 
+0000006387 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+6455
+%%EOF
