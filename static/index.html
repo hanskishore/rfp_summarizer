@@ -656,6 +656,7 @@ async function lookupNotice() {
   const btn = document.getElementById('noticeBtn');
   btn.disabled = true; btn.textContent = 'Fetching…';
   showEmpty('Fetching from SAM.gov…');
+  clearNoticeError();
 
   try {
     const r = await fetch('/api/notice', {
@@ -667,16 +668,40 @@ async function lookupNotice() {
         model: document.getElementById('noticeModel').value,
       }),
     });
-    if (!r.ok) { const e = await r.json(); throw new Error(e.detail); }
+    if (!r.ok) {
+      const e = await r.json();
+      const status = r.status;
+      let msg = e.detail || 'Unknown error';
+      if (status === 404) msg = `Notice not found: ${msg}`;
+      else if (status === 401) msg = `Authentication failed: ${msg}`;
+      else if (status === 503) msg = `SAM.gov unavailable: ${msg}`;
+      showNoticeError(msg);
+      showEmpty();
+      return;
+    }
     const {summary} = await r.json();
     addSummary(summary);
     toast('✓ Notice fetched');
   } catch (err) {
-    toast('Error: ' + err.message, true);
+    showNoticeError('Could not connect to server. Is the app running?');
     showEmpty();
   } finally {
     btn.disabled = false; btn.textContent = 'Fetch & Summarize';
   }
+}
+
+function showNoticeError(msg) {
+  clearNoticeError();
+  const el = document.createElement('div');
+  el.id = 'noticeError';
+  el.style.cssText = `background:#fff1f2;border:1px solid #fecaca;border-radius:6px;
+    padding:10px 12px;font-size:12px;color:#b91c1c;line-height:1.5;margin-top:2px`;
+  el.innerHTML = `<strong>⚠ Error</strong><br>${esc(msg)}`;
+  document.getElementById('panel-notice').appendChild(el);
+}
+
+function clearNoticeError() {
+  document.getElementById('noticeError')?.remove();
 }
 
 function addSummary(summary) {

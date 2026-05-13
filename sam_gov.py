@@ -25,11 +25,32 @@ NOTICE_TYPES = {
 def _get_api_key() -> str:
     key = os.environ.get("SAM_GOV_API_KEY", "").strip()
     if not key:
-        sys.exit(
-            "Error: SAM_GOV_API_KEY environment variable is not set.\n"
+        raise RuntimeError(
+            "SAM_GOV_API_KEY is not set. "
             "Get a free API key at https://sam.gov/profile/details and add it to .env"
         )
     return key
+
+
+def _raise_for_status(resp: requests.Response) -> None:
+    """Raise a readable RuntimeError for non-2xx SAM.gov responses."""
+    if resp.ok:
+        return
+    if resp.status_code == 401:
+        raise RuntimeError("SAM.gov API key is invalid or expired (401). Check SAM_GOV_API_KEY in .env.")
+    if resp.status_code == 403:
+        raise RuntimeError("SAM.gov API key does not have permission for this resource (403).")
+    if resp.status_code == 404:
+        raise RuntimeError("SAM.gov notice not found (404). Verify the notice ID is correct.")
+    if resp.status_code == 429:
+        raise RuntimeError("SAM.gov rate limit exceeded (429). Wait a moment and try again.")
+    try:
+        detail = resp.json().get("message") or resp.json().get("error", {}).get("message", "")
+    except Exception:
+        detail = resp.text[:200]
+    raise RuntimeError(
+        f"SAM.gov returned HTTP {resp.status_code}{': ' + detail if detail else ''}."
+    )
 
 
 def _strip_html(text: str) -> str:
@@ -85,29 +106,46 @@ def search_opportunities(
         f"(limit={limit}, {params['postedFrom']} → {params['postedTo']})",
         file=sys.stderr,
     )
-    resp = requests.get(
-        f"{SAM_API_BASE}/opportunities/v2/search",
-        params=params,
-        timeout=30,
-    )
-    resp.raise_for_status()
+    try:
+        resp = requests.get(
+            f"{SAM_API_BASE}/opportunities/v2/search",
+            params=params,
+            timeout=30,
+        )
+    except requests.Timeout:
+        raise RuntimeError("SAM.gov search timed out. Try again or reduce the result limit.")
+    except requests.ConnectionError:
+        raise RuntimeError("Could not reach SAM.gov. Check your internet connection.")
+    _raise_for_status(resp)
     data = resp.json()
     return data.get("opportunitiesData", [])
 
 
-def fetch_opportunity_by_id(notice_id: str) -> Optional[dict]:
+def fetch_opportunity_by_id(notice_id: str) -> dict:
     """Fetch a single opportunity by its SAM.gov notice ID."""
-    params = {"api_key": _get_api_key(), "noticeid": notice_id}
+    if not notice_id or not notice_id.strip():
+        raise ValueError("Notice ID cannot be empty.")
+    params = {"api_key": _get_api_key(), "noticeid": notice_id.strip()}
     print(f"[*] Fetching SAM.gov notice: {notice_id}", file=sys.stderr)
-    resp = requests.get(
-        f"{SAM_API_BASE}/opportunities/v2/search",
-        params=params,
-        timeout=30,
-    )
-    resp.raise_for_status()
+    try:
+        resp = requests.get(
+            f"{SAM_API_BASE}/opportunities/v2/search",
+            params=params,
+            timeout=30,
+        )
+    except requests.Timeout:
+        raise RuntimeError("SAM.gov request timed out while fetching the notice.")
+    except requests.ConnectionError:
+        raise RuntimeError("Could not reach SAM.gov. Check your internet connection.")
+    _raise_for_status(resp)
     data = resp.json()
     opps = data.get("opportunitiesData", [])
-    return opps[0] if opps else None
+    if not opps:
+        raise LookupError(
+            f"No opportunity found for notice ID '{notice_id}'. "
+            "Double-check the ID on SAM.gov — it may be archived, cancelled, or the ID may be incorrect."
+        )
+    return opps[0]
 
 
 def opportunity_to_text(notice: dict) -> str:
@@ -163,8 +201,15 @@ def list_attachments(notice_id: str) -> list[dict]:
     """Return metadata for file attachments on a SAM.gov notice."""
     api_key = _get_api_key()
     url = f"{SAM_API_BASE}/opportunities/v1/noticeid/{notice_id}/resources"
-    resp = requests.get(url, params={"api_key": api_key}, timeout=30)
-    resp.raise_for_status()
+    try:
+        resp = requests.get(url, params={"api_key": api_key}, timeout=30)
+    except requests.Timeout:
+        raise RuntimeError("Timed out fetching attachment list from SAM.gov.")
+    except requests.ConnectionError:
+        raise RuntimeError("Could not reach SAM.gov when fetching attachments.")
+    if resp.status_code == 404:
+        return []  # notice exists but has no attachments
+    _raise_for_status(resp)
     data = resp.json()
     return data.get("resources", data.get("attachments", []))
 
@@ -176,6 +221,16 @@ def download_attachment(notice_id: str, resource_id: str) -> bytes:
         f"{SAM_API_BASE}/opportunities/v1/noticeid/{notice_id}"
         f"/resources/files/{resource_id}/download"
     )
-    resp = requests.get(url, params={"api_key": api_key}, timeout=60)
-    resp.raise_for_status()
+    try:
+        resp = requests.get(url, params={"api_key": api_key}, timeout=60)
+    except requests.Timeout:
+        raise RuntimeError(f"Timed out downloading attachment '{resource_id}'.")
+    except requests.ConnectionError:
+        raise RuntimeError("Could not reach SAM.gov when downloading attachment.")
+    if resp.status_code == 404:
+        raise FileNotFoundError(
+            f"Attachment '{resource_id}' not found on SAM.gov (404). "
+            "It may have been removed or the resource ID is incorrect."
+        )
+    _raise_for_status(resp)
     return resp.content

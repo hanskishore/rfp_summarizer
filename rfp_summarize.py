@@ -186,9 +186,7 @@ def summarize_from_sam_id(
     """
     from sam_gov import fetch_opportunity_by_id, opportunity_to_text, list_attachments, download_attachment
 
-    notice = fetch_opportunity_by_id(notice_id)
-    if not notice:
-        sys.exit(f"Error: No SAM.gov opportunity found with ID: {notice_id}")
+    notice = fetch_opportunity_by_id(notice_id)  # raises LookupError if not found
 
     text_content = opportunity_to_text(notice)
 

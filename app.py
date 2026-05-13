@@ -124,8 +124,18 @@ async def search_sam(req: SAMSearchRequest):
 
             yield _sse({"type": "done"})
 
-        except Exception as exc:
+        except LookupError as exc:
             yield _sse({"type": "error", "message": str(exc)})
+        except RuntimeError as exc:
+            msg = str(exc)
+            if "invalid or expired" in msg:
+                yield _sse({"type": "error", "message": "SAM.gov API key is invalid or expired. Check SAM_GOV_API_KEY in .env."})
+            elif "timed out" in msg or "reach SAM" in msg:
+                yield _sse({"type": "error", "message": "Could not reach SAM.gov. Check your connection and try again."})
+            else:
+                yield _sse({"type": "error", "message": msg})
+        except Exception as exc:
+            yield _sse({"type": "error", "message": f"Unexpected error: {exc}"})
 
     return StreamingResponse(
         generate(),
@@ -138,6 +148,10 @@ async def search_sam(req: SAMSearchRequest):
 async def get_notice(req: SAMNoticeRequest):
     if not os.environ.get("OPENAI_API_KEY"):
         raise HTTPException(400, "OPENAI_API_KEY not configured in .env")
+    if not os.environ.get("SAM_GOV_API_KEY"):
+        raise HTTPException(400, "SAM_GOV_API_KEY not configured in .env")
+    if not req.notice_id.strip():
+        raise HTTPException(400, "Notice ID cannot be empty.")
 
     def run():
         from rfp_summarize import summarize_from_sam_id
@@ -149,8 +163,22 @@ async def get_notice(req: SAMNoticeRequest):
             use_attachments=req.use_attachments,
         )
 
-    loop = asyncio.get_event_loop()
-    summary = await loop.run_in_executor(None, run)
+    try:
+        loop = asyncio.get_event_loop()
+        summary = await loop.run_in_executor(None, run)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc))
+    except RuntimeError as exc:
+        msg = str(exc)
+        code = 401 if "invalid or expired" in msg else 503 if "timed out" in msg or "reach SAM" in msg else 502
+        raise HTTPException(code, msg)
+    except Exception as exc:
+        raise HTTPException(500, f"Unexpected error: {exc}")
+
     summary["_notice_id"] = req.notice_id
     summary["_source"] = "sam"
     return {"summary": summary}
