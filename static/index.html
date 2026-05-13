@@ -205,6 +205,58 @@
   .tl-item:last-child{border-bottom:none}
   .tl-date{width:130px;flex-shrink:0;color:var(--muted);font-weight:600;font-size:12px}
 
+  /* TL;DR */
+  .tldr-box{background:linear-gradient(135deg,#eff6ff,#f0fdf4);
+            border:1px solid #bfdbfe;border-radius:6px;padding:14px 16px;
+            font-size:14px;line-height:1.7;color:var(--text)}
+  .tldr-box strong{color:var(--blue);font-size:10px;letter-spacing:.8px;
+                   text-transform:uppercase;display:block;margin-bottom:6px}
+
+  /* Bid Score */
+  .bid-score-card{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+  .grade-circle{width:80px;height:80px;border-radius:50%;display:flex;
+                flex-direction:column;align-items:center;justify-content:center;
+                flex-shrink:0;border:4px solid}
+  .grade-letter{font-size:32px;font-weight:900;line-height:1}
+  .grade-num{font-size:11px;font-weight:700;opacity:.8}
+  .grade-details{flex:1;min-width:200px}
+  .grade-label{font-size:15px;font-weight:800;margin-bottom:10px}
+  .grade-reasons{display:flex;flex-direction:column;gap:5px}
+  .gr-item{display:flex;align-items:center;gap:7px;font-size:12px}
+  .gr-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .gr-good{background:#16a34a}.gr-warn{background:#d97706}.gr-bad{background:#dc2626}
+
+  /* Budget / Timeline */
+  .budget-timeline{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .bt-left{padding:18px 20px;border-right:1px solid var(--border)}
+  .bt-right{padding:18px 20px}
+  @media(max-width:600px){.budget-timeline{grid-template-columns:1fr}
+    .bt-left{border-right:none;border-bottom:1px solid var(--border)}}
+  .bt-amount{font-size:28px;font-weight:900;color:var(--text);line-height:1;margin-bottom:4px}
+  .bt-note{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .bt-pills{display:flex;flex-wrap:wrap;gap:6px}
+  .bt-pill{background:#f1f5f9;border:1px solid var(--border);border-radius:5px;
+           padding:5px 10px;font-size:12px;font-weight:600;color:var(--text)}
+  .mini-timeline{display:flex;flex-direction:column;gap:0}
+  .mt-item{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:12px}
+  .mt-item:last-child{padding-bottom:0}
+  .mt-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px;
+          border:2px solid;position:relative;z-index:1}
+  .mt-item:not(:last-child) .mt-dot::after{content:'';position:absolute;
+    left:50%;top:100%;transform:translateX(-50%);width:2px;
+    height:calc(100% + 12px - 10px + 12px);background:var(--border)}
+  .mt-label{font-size:12px;font-weight:600;color:var(--text)}
+  .mt-date{font-size:11px;color:var(--muted)}
+
+  /* Requirements */
+  .req-section{margin-bottom:16px}
+  .req-section:last-child{margin-bottom:0}
+  .req-kind{font-size:10px;font-weight:800;letter-spacing:.6px;
+            text-transform:uppercase;margin-bottom:8px;
+            display:flex;align-items:center;gap:6px}
+  .req-kind-dot{width:8px;height:8px;border-radius:50%}
+
+  /* Red flags */
   .red-flags{display:flex;flex-direction:column;gap:7px}
   .rf-item{display:flex;gap:9px;padding:9px 11px;border-radius:6px;
            background:#fff1f2;border:1px solid #fecaca;font-size:13px;line-height:1.5}
@@ -682,50 +734,115 @@ function showEmpty(msg) {
        </div>`;
 }
 
+// ── Bid Score calculator ──────────────────────────────────────────────────────
+function calcBidScore(s, dl) {
+  const reqs     = ((s.requirements||{}).mandatory||[]).join(' ').toLowerCase();
+  const elig     = (s.eligibility||[]).join(' ').toLowerCase();
+  const flagText = (s.red_flags||[]).join(' ').toLowerCase();
+  const flags    = (s.red_flags||[]).length;
+  const budget   = typeof s.budget==='object' ? s.budget?.amount : (s.budget||'');
+  let score = 70;
+  const reasons = [];
+
+  // Deadline
+  if (dl === null || dl < 0) {
+    return {grade:'N/A', score:0, label:'No deadline data',
+            color:'#94a3b8', bg:'#f1f5f9', reasons:[]};
+  }
+  if      (dl <= 7)  { score -= 25; reasons.push({t:'bad',  txt:`Only ${dl} days left`}); }
+  else if (dl <= 14) { score -= 15; reasons.push({t:'warn', txt:`${dl} days until deadline`}); }
+  else if (dl <= 30) { score -= 5;  reasons.push({t:'warn', txt:`${dl} days until deadline`}); }
+  else if (dl >= 60) { score += 10; reasons.push({t:'good', txt:`${dl} days to prepare`}); }
+  else               {              reasons.push({t:'good', txt:`${dl} days to prepare`}); }
+
+  // Red flags
+  if      (flags === 0) { score += 10; reasons.push({t:'good', txt:'No red flags'}); }
+  else if (flags === 1) { score -= 10; reasons.push({t:'warn', txt:'1 red flag identified'}); }
+  else if (flags === 2) { score -= 20; reasons.push({t:'warn', txt:'2 red flags identified'}); }
+  else                  { score -= 30; reasons.push({t:'bad',  txt:`${flags} red flags`}); }
+
+  // Clearance
+  if (reqs.includes('ts/sci')||reqs.includes('top secret'))
+    { score -= 15; reasons.push({t:'warn', txt:'TS/SCI clearance required'}); }
+  else if (reqs.includes('secret clearance'))
+    { score -= 8;  reasons.push({t:'warn', txt:'Secret clearance required'}); }
+
+  // FedRAMP
+  if (reqs.includes('fedramp'))
+    { score -= 10; reasons.push({t:'warn', txt:'FedRAMP authorization required'}); }
+
+  // Award without discussions
+  if (flagText.includes('without discussion')||flagText.includes('best offer'))
+    { score -= 10; reasons.push({t:'warn', txt:'Award without discussions likely'}); }
+
+  // Set-aside (positive)
+  if (elig.includes('small business'))
+    { score += 10; reasons.push({t:'good', txt:'Small Business set-aside'}); }
+  if (elig.includes('8(a)')||elig.includes('8a'))
+    { score += 5;  reasons.push({t:'good', txt:'8(a) set-aside'}); }
+
+  // Budget size
+  const m = String(budget).match(/[\d,.]+/);
+  const val = m ? parseFloat(m[0].replace(/,/g,'')) : 0;
+  if      (val >= 10e6) { score += 10; reasons.push({t:'good', txt:`High-value contract (${budget})`}); }
+  else if (val >= 1e6)  { score += 5;  reasons.push({t:'good', txt:`Est. value: ${budget}`}); }
+
+  score = Math.max(0, Math.min(100, score));
+
+  let grade, label, color, bg;
+  if      (score >= 85) { grade='A'; label='Strong Opportunity';    color='#15803d'; bg='#f0fdf4'; }
+  else if (score >= 70) { grade='B'; label='Good Opportunity';      color='#1d4ed8'; bg='#eff6ff'; }
+  else if (score >= 55) { grade='C'; label='Viable Bid';            color='#b45309'; bg='#fffbeb'; }
+  else if (score >= 40) { grade='D'; label='Proceed with Caution';  color='#c2410c'; bg='#fff7ed'; }
+  else                  { grade='F'; label='Not Recommended';        color='#b91c1c'; bg='#fff1f2'; }
+
+  return {grade, score, label, color, bg, reasons};
+}
+
 // ── Detail card ───────────────────────────────────────────────────────────────
 function renderDetail(s) {
   if (!s) { showEmpty(); return; }
 
-  const dl = daysUntil(s.due_date);
-  const budget = typeof s.budget === 'object' ? s.budget?.amount : s.budget;
+  const dl       = daysUntil(s.due_date);
+  const budget   = typeof s.budget==='object' ? s.budget?.amount : s.budget;
+  const budgetNote = typeof s.budget==='object' ? s.budget?.notes : null;
   const redFlags = s.red_flags || [];
   const eligibility = s.eligibility || [];
-  const scopes = s.scope_of_work || [];
+  const scopes   = s.scope_of_work || [];
   const mandatory = (s.requirements||{}).mandatory || [];
   const preferred = (s.requirements||{}).preferred || [];
   const evalCrit = s.evaluation_criteria || [];
-  const keyDates = s.key_dates || [];
-  const contact = s.contact || {};
-  const samLink = s._sam_link || s.sam_gov_link || '';
+  const contact  = s.contact || {};
+  const samLink  = s._sam_link || s.sam_gov_link || '';
+  const score    = calcBidScore(s, dl);
 
-  // Stats
+  // Stats strip
   const dueLabel = dl === null ? '—' : dl < 0 ? 'Closed' : `${dl} days`;
-  const dueCls = dl !== null && dl >= 0 && dl <= 14 ? 'urgent'
-               : dl !== null && dl >= 0 ? 'ok' : '';
+  const dueCls   = dl !== null && dl >= 0 && dl <= 14 ? 'urgent'
+                 : dl !== null && dl >= 0 ? 'ok' : '';
 
-  // Dates timeline
-  const allDates = [];
-  if (s.issue_date)         allDates.push({event:'RFP Issued', date:s.issue_date});
-  if (s.questions_deadline) allDates.push({event:'Questions Due', date:s.questions_deadline});
-  keyDates.forEach(d => allDates.push(d));
-  if (s.due_date)           allDates.push({event:'Proposals Due', date:s.due_date});
+  // Mini timeline for Budget/Timeline card
+  const tl = [];
+  if (s.issue_date)         tl.push({e:'RFP Issued',     d:s.issue_date,         dot:'#94a3b8'});
+  if (s.questions_deadline) tl.push({e:'Questions Due',  d:s.questions_deadline, dot:'#d97706'});
+  (s.key_dates||[]).forEach(k => tl.push({e:k.event, d:k.date, dot:'#64748b'}));
+  if (s.due_date)           tl.push({e:'Proposals Due',  d:s.due_date,           dot:dl<=14?'#dc2626':'#16a34a'});
 
   document.getElementById('main').innerHTML = `
   <div class="bid-card">
 
-    <!-- Hero -->
+    <!-- ① Hero header -->
     <div class="card">
       <div class="card-header">
         <div class="hero-badges">
-          ${s.rfp_number ? `<span class="badge badge-gray">${esc(s.rfp_number)}</span>` : ''}
-          ${s.contract_type ? `<span class="badge badge-blue">${esc(s.contract_type)}</span>` : ''}
+          ${s.rfp_number?`<span class="badge badge-gray">${esc(s.rfp_number)}</span>`:''}
+          ${s.contract_type?`<span class="badge badge-blue">${esc(s.contract_type)}</span>`:''}
           ${eligibility.map(e=>`<span class="badge badge-purple">${esc(e)}</span>`).join('')}
           <span class="badge ${s._source==='upload'?'badge-gray':'badge-green'}">${s._source==='upload'?'Uploaded':'SAM.gov'}</span>
         </div>
         <div class="hero-title">${esc(s.title||'Untitled RFP')}</div>
         <div class="hero-sub">${esc(s.issuing_organization||'')}${s.issue_date?' &nbsp;·&nbsp; Issued '+esc(s.issue_date):''}</div>
       </div>
-
       <div class="stats-strip">
         <div class="stat"><span class="stat-label">Budget</span><span class="stat-value">${esc(budget||'—')}</span></div>
         <div class="stat"><span class="stat-label">Contract</span><span class="stat-value">${esc(s.contract_type||'—')}</span></div>
@@ -733,19 +850,8 @@ function renderDetail(s) {
         <div class="stat"><span class="stat-label">Due Date</span><span class="stat-value ${dueCls}">${esc(s.due_date||'—')}</span></div>
         <div class="stat"><span class="stat-label">Days Left</span><span class="stat-value ${dueCls}">${dueLabel}</span></div>
       </div>
-
-      <div class="card-body">
-        ${s.project_overview?`
-          <div style="margin-bottom:18px">
-            <div class="section-title">Overview</div>
-            <p style="font-size:13px;line-height:1.7">${esc(s.project_overview)}</p>
-          </div>`:''}
-        <div class="section-title">Bid Scorecard</div>
-        <div class="scorecard">${buildScorecard(s, dl)}</div>
-      </div>
-
       <div class="actions-bar">
-        <button class="action-btn primary" onclick="downloadDocx()">⬇ Download Word</button>
+        <button class="action-btn primary"   onclick="downloadDocx()">⬇ Download Word</button>
         <button class="action-btn secondary" onclick="downloadJSON()">{ } Export JSON</button>
         <button class="action-btn secondary" onclick="copyText()">⎘ Copy Summary</button>
         <button class="action-btn secondary" onclick="window.print()">🖨 Print</button>
@@ -753,7 +859,100 @@ function renderDetail(s) {
       </div>
     </div>
 
-    <!-- Scope + Eval -->
+    <!-- ② TL;DR -->
+    ${s.tldr||s.project_overview?`
+    <div class="card"><div class="card-body">
+      <div class="section-title">TL;DR</div>
+      <div class="tldr-box">
+        <strong>Quick Take</strong>
+        ${esc(s.tldr||s.project_overview)}
+      </div>
+    </div></div>`:''}
+
+    <!-- ③ Bid Score -->
+    <div class="card"><div class="card-body" style="background:${score.bg};border-radius:var(--r)">
+      <div class="section-title">Bid Score</div>
+      <div class="bid-score-card">
+        <div class="grade-circle" style="border-color:${score.color};background:${score.bg}">
+          <span class="grade-letter" style="color:${score.color}">${score.grade}</span>
+          ${score.score?`<span class="grade-num" style="color:${score.color}">${score.score}/100</span>`:''}
+        </div>
+        <div class="grade-details">
+          <div class="grade-label" style="color:${score.color}">${score.label}</div>
+          <div class="grade-reasons">
+            ${score.reasons.map(r=>`
+              <div class="gr-item">
+                <div class="gr-dot gr-${r.t}"></div>
+                <span style="color:var(--text)">${esc(r.txt)}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- ④ Budget / Timeline -->
+    <div class="card">
+      <div class="card-body" style="padding:0">
+        <div class="budget-timeline">
+          <div class="bt-left">
+            <div class="section-title">Budget &amp; Contract</div>
+            <div class="bt-amount">${esc(budget||'Not stated')}</div>
+            ${budgetNote?`<div class="bt-note">${esc(budgetNote)}</div>`:
+              s.budget?.notes?`<div class="bt-note">${esc(s.budget.notes)}</div>`:
+              `<div class="bt-note" style="height:18px"></div>`}
+            <div class="bt-pills">
+              ${s.contract_type?`<span class="bt-pill">📋 ${esc(s.contract_type)}</span>`:''}
+              ${s.contract_period?`<span class="bt-pill">⏱ ${esc(s.contract_period)}</span>`:''}
+              ${eligibility.map(e=>`<span class="bt-pill">🏷 ${esc(e)}</span>`).join('')}
+            </div>
+          </div>
+          <div class="bt-right">
+            <div class="section-title">Timeline</div>
+            ${tl.length?`
+            <div class="mini-timeline">
+              ${tl.map(t=>`
+                <div class="mt-item">
+                  <div class="mt-dot" style="background:${t.dot};border-color:${t.dot}"></div>
+                  <div><div class="mt-label">${esc(t.e)}</div><div class="mt-date">${esc(t.d||'')}</div></div>
+                </div>`).join('')}
+            </div>`:`<p style="color:var(--muted);font-size:13px">No dates found</p>`}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑤ Requirements -->
+    ${mandatory.length||preferred.length?`
+    <div class="card"><div class="card-body">
+      <div class="section-title">Requirements</div>
+      ${mandatory.length?`
+        <div class="req-section">
+          <div class="req-kind">
+            <div class="req-kind-dot" style="background:var(--red)"></div>
+            <span style="color:var(--red)">Mandatory</span>
+          </div>
+          <div class="tag-list">${mandatory.map(r=>`<span class="tag tag-req">${esc(r)}</span>`).join('')}</div>
+        </div>`:''}
+      ${preferred.length?`
+        <div class="req-section">
+          <div class="req-kind">
+            <div class="req-kind-dot" style="background:var(--blue)"></div>
+            <span style="color:var(--blue)">Preferred</span>
+          </div>
+          <div class="tag-list">${preferred.map(r=>`<span class="tag tag-pref">${esc(r)}</span>`).join('')}</div>
+        </div>`:''}
+    </div></div>`:''}
+
+    <!-- ⑥ Red Flags -->
+    ${redFlags.length?`
+    <div class="card" style="border-color:#fecaca"><div class="card-body">
+      <div class="section-title" style="color:var(--red)">⚠ Red Flags</div>
+      <div class="red-flags">
+        ${redFlags.map(f=>`<div class="rf-item"><span>🚩</span><span>${esc(f)}</span></div>`).join('')}
+      </div>
+    </div></div>`:''}
+
+    <!-- ⑦ Scope + Eval -->
     <div class="two-col">
       <div class="card"><div class="card-body">
         <div class="section-title">Scope of Work</div>
@@ -774,29 +973,7 @@ function renderDetail(s) {
       </div></div>
     </div>
 
-    <!-- Requirements -->
-    ${mandatory.length||preferred.length?`
-    <div class="card"><div class="card-body">
-      <div class="section-title">Requirements</div>
-      ${mandatory.length?`
-        <p style="font-size:10px;font-weight:800;color:var(--red);letter-spacing:.5px;margin-bottom:7px">MANDATORY</p>
-        <div class="tag-list" style="margin-bottom:14px">${mandatory.map(r=>`<span class="tag tag-req">${esc(r)}</span>`).join('')}</div>`:''}
-      ${preferred.length?`
-        <p style="font-size:10px;font-weight:800;color:var(--blue);letter-spacing:.5px;margin-bottom:7px">PREFERRED</p>
-        <div class="tag-list">${preferred.map(r=>`<span class="tag tag-pref">${esc(r)}</span>`).join('')}</div>`:''}
-    </div></div>`:''}
-
-    <!-- Dates -->
-    <div class="card"><div class="card-body">
-      <div class="section-title">Key Dates</div>
-      <div class="timeline">
-        ${allDates.length
-          ?allDates.map(d=>`<div class="tl-item"><span class="tl-date">${esc(d.date||'')}</span><span>${esc(d.event||'')}</span></div>`).join('')
-          :`<p style="color:var(--muted);font-size:13px">No dates found</p>`}
-      </div>
-    </div></div>
-
-    <!-- Submission + Contact -->
+    <!-- ⑧ Submission + Contact -->
     <div class="two-col">
       <div class="card"><div class="card-body">
         <div class="section-title">Submission Requirements</div>
@@ -821,61 +998,7 @@ function renderDetail(s) {
       </div></div>
     </div>
 
-    <!-- Red flags -->
-    ${redFlags.length?`
-    <div class="card" style="border-color:#fecaca"><div class="card-body">
-      <div class="section-title" style="color:var(--red)">⚠ Red Flags</div>
-      <div class="red-flags">${redFlags.map(f=>`
-        <div class="rf-item"><span>🚩</span><span>${esc(f)}</span></div>`).join('')}
-      </div>
-    </div></div>`:''}
-
   </div>`;
-}
-
-// ── Scorecard ─────────────────────────────────────────────────────────────────
-function buildScorecard(s, dl) {
-  const items = [];
-  const elig = (s.eligibility||[]).join(' ').toLowerCase();
-  const reqs = ((s.requirements||{}).mandatory||[]).join(' ').toLowerCase();
-  const flags = (s.red_flags||[]).length;
-  const budget = typeof s.budget==='object' ? s.budget?.amount : (s.budget||'');
-  const flagText = (s.red_flags||[]).join(' ').toLowerCase();
-
-  if (dl !== null && dl >= 0) {
-    if (dl <= 7)       items.push({c:'flag', i:'⏰', t:`Only ${dl} days until deadline`});
-    else if (dl <= 21) items.push({c:'warn', i:'📅', t:`${dl} days until proposal due`});
-    else               items.push({c:'good', i:'✅', t:`${dl} days to prepare`});
-  }
-  if (elig.includes('small business'))  items.push({c:'good', i:'🏢', t:'Small Business set-aside'});
-  if (elig.includes('8(a)')||elig.includes('8a')) items.push({c:'info', i:'🏷️', t:'8(a) set-aside'});
-  if (elig.includes('wosb'))            items.push({c:'info', i:'🏷️', t:'WOSB set-aside'});
-  if (elig.includes('hubzone'))         items.push({c:'info', i:'🏷️', t:'HUBZone set-aside'});
-  if (reqs.includes('ts/sci')||reqs.includes('top secret')) items.push({c:'warn', i:'🔐', t:'TS/SCI clearance required'});
-  else if (reqs.includes('secret clearance'))               items.push({c:'warn', i:'🔒', t:'Secret clearance required'});
-  if (reqs.includes('fedramp'))         items.push({c:'warn', i:'🛡️', t:'FedRAMP authorization required'});
-  if (budget) {
-    const m = String(budget).match(/[\d,.]+/);
-    if (m && parseFloat(m[0].replace(/,/g,'')) >= 1e6)
-      items.push({c:'good', i:'💰', t:`Est. value: ${budget}`});
-    else if (m)
-      items.push({c:'info', i:'💵', t:`Budget: ${budget}`});
-  }
-  if (flags === 0)      items.push({c:'good', i:'✅', t:'No red flags identified'});
-  else if (flags <= 2)  items.push({c:'warn', i:'⚠️', t:`${flags} red flag${flags>1?'s':''} — review carefully`});
-  else                  items.push({c:'flag', i:'🚩', t:`${flags} red flags — high risk`});
-  if (flagText.includes('without discussion')||flagText.includes('best offer'))
-    items.push({c:'warn', i:'🎯', t:'Award without discussions likely'});
-  if (s.contract_type) {
-    const ct = s.contract_type.toLowerCase();
-    if (ct.includes('fixed'))  items.push({c:'info', i:'📋', t:'Firm Fixed-Price contract'});
-    else if (ct.includes('idiq')) items.push({c:'info', i:'📋', t:'IDIQ contract vehicle'});
-    else if (ct.includes('t&m')||ct.includes('time')) items.push({c:'info', i:'📋', t:'Time & Materials contract'});
-  }
-  return items.map(({c,i,t}) => `
-    <div class="score-item ${c}">
-      <span class="si">${i}</span><span>${esc(t)}</span>
-    </div>`).join('') || `<div class="score-item info"><span class="si">ℹ️</span><span>Insufficient data for scorecard</span></div>`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────

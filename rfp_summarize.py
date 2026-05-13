@@ -25,6 +25,7 @@ Return ONLY a JSON object with these fields (omit any field for which no informa
   "rfp_number": "RFP reference or solicitation number",
   "issue_date": "Date the RFP was issued (ISO 8601 if determinable)",
   "due_date": "Proposal submission deadline (ISO 8601 if determinable)",
+  "tldr": "1–2 sentence plain-English executive summary: what is being bought, who can bid, and the rough value",
   "project_overview": "2–4 sentence plain-English description of what is being procured",
   "scope_of_work": ["Bullet list of key deliverables or work items"],
   "requirements": {
